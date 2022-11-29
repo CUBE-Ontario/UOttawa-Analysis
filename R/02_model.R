@@ -270,7 +270,7 @@ plot_site <- function(uo_pred, uo_swabs, uo_cases, selected) {
 
 # parse UO swabs and cases data; only use the flock swabs for model results
 swabs <- read_rds(here('data/cube.rds')) |>
-  filter(swab_type != 'sponge')
+  filter(swab_type != 'sponge', !negative_control)
 
 cases <- read_rds(here('data/latest_uo_cases.rds')) |>
   filter(positive_result > '2021-08-20', !is.na(positive_result))
@@ -348,7 +348,7 @@ uo_pred <-
   bind_cols(pred = predict(swab_model, newdata = uo_swabs, type = 'response')) |>
   select(site, week, date, pred)
 
-write_rds(uo_pred, here('results/uo_pred.rds'))
+write_rds(uo_pred, here('model/uo_pred.rds'))
 
 plt_curves <- plot_logit_curves(uo_sites, swab_model,
                                 sites = unique(uo_sites$site))
@@ -381,12 +381,9 @@ uo_prediction_figure <- wrap_plots(plots, guides = 'collect', ncol = 2) &
     subtitle = 'Swab results and cases (lower panels) aligned with\n probability of cases according to our model (top panels)'
   )
 
-uo_prediction_figure
-plt_curves
+print(uo_prediction_figure)
+print(plt_curves)
 
 write_rds(uo_prediction_figure, here('fig/uo_prediction_figure.rds'))
 write_rds(plt_curves, here('fig/plt_model_resp_curves.rds'))
-
-
-rm(list = ls())
 

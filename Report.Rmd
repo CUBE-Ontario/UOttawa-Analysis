@@ -1,0 +1,307 @@
+---
+title: "CUBE - UOttawa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(ggiraph)
+source(here('R/report_plots.R'))
+```
+
+
+```{r}
+swabs <- read_rds(here('data/cube.rds')) |> 
+  filter(str_detect(site, '^UO_')) |> 
+  glimpse()
+
+swabs |> count(site, date_swab)
+
+# waste water data 
+raw_ww <-
+  readxl::read_excel(here::here('data/wastewater.xlsx')) |>
+  janitor::clean_names()
+
+uottawa_ww <-
+  raw_ww |>
+  filter(!is.na(sample_date)) |>
+  mutate(
+    source =
+      source_name |>
+      str_remove('^Data - uOttawa - ') |>
+      str_remove('.xlsx$'),
+    site = case_when(
+      source == 'uo_aa' ~ 'AA',
+      source == 'uo_fa' ~ 'FA',
+      source == 'uo_ft' ~ 'FT',
+      source == 'uo_na' ~ 'NA',
+      source == 'uo_rgn' ~ 'RGN',
+      source == 'uo_st' ~ 'ST',
+      source == 'uo_tbt' ~ 'TBT',
+    )
+  )
+
+# ottawa wastewater data: summary
+summarise_wastewater <- function(){
+  read_rds(here('data/ww_ottawa.rds')) |> 
+  select(sample_date, starts_with('cov_')) |> 
+  pivot_longer(contains('cov_')) |> 
+  mutate(target = str_extract(name, 'cov_n.'),
+         stat = str_extract(name, 'mean|sd'),
+         ) |> 
+  select(-name) |> 
+  pivot_wider(names_from = stat, values_from = value) |> 
+  mutate(.lower = mean - sd, .upper = mean + sd)   
+}
+```
+
+
+
+#### 📊 Summary
+
+This plot shows the counts of positive (red) and negative (yellow) samples collected at each facility over time (x-axis). Samples that could not be tested are shown in navy. Only flocked swabs are shown. (Other sponge swabs were collected on 2022-04-28 were for comparing flocked and sponge swabs.)
+
+```{r university bargraph}
+plot_timeseries_summary(
+  swabs |> 
+    filter(
+      swab_type %in% 'flock',
+      !negative_control,
+      !is.na(negative_control)
+    ),
+  height_svg = 3.3,
+  width_svg = 8
+  )
+```
+
+
+------------------------------------------------------------------------
+
+#### ⡯⡷ Dotplot
+
+This plot shows the counts of positive and negative samples collected at each facility over time. 
+
+```{r univeristy dotplot}
+plot_timeseries_locations(
+  swabs |> 
+    filter(swab_type == 'flock'),
+  height_svg = 6,
+  width_svg = 8
+  )
+```
+
+------------------------------------------------------------------------
+
+#### Waste Water Data 
+
+
+```{r}
+uottawa_ww |>
+  ggplot(aes(sample_date, viral_copies_per_copies_pep_avg, color = site)) +
+  geom_line(alpha = 0.5) +
+  geom_point(alpha = 0.5) +
+  labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV')
+
+rm(raw_ww, uottawa_ww)
+```
+
+
+
+-----
+
+
+
+## UO Results {.tabset}
+
+This section contains results from modeling covid cases at UO using swab results as a predictor.
+
+<br>
+
+### Modelling {.tabset .tabset-pills}
+
+Derek and Jason used mixed effects logistic regression to model the occurrence of cases (y/n) based on swab results for the previous week (the proportion of positive swabs). The model has a random intercept for sites.
+
+#### Model specification
+
+I switched this model to a Bayesian mixed-effects model. In the mixed-effects generalized linear model, MRT/90U are problem-sites where the random intercept parameter causes the model fit to be overspecified (model matrix becomes singular).
+
+Our model formula is `cases ~ positives[lag 1 week] + (1|site)`.
+
+The model is fit as follows:
+
+```{r eval=FALSE, echo=TRUE}
+swab_model <-
+  blme::bglmer(
+    cases_binary ~ detection_lag_1week + (1 | site),
+    data =  uo_sites,
+    family = binomial
+  )
+```
+
+------------------------------------------------------------------------
+
+```{r model}
+swab_model <- read_rds(here('data/uottawa/model/uo_swab_model.rds'))
+```
+
+<br>
+
+#### Model response time-series
+
+These plots show the swab results, cases, and predictions by the current model.\
+<br>
+
+```{r prediction figure live version, fig.height=8, fig.width=9.5}
+# uo cases data - long table
+cases_long <-
+  read_rds(here('./data/latest_uo_cases.rds')) |>
+  filter(!is.na(positive_result),
+         positive_result > lubridate::as_date('2021-09-14')) |>
+  select(case, role, confirmed_by_test, positive_result, c(`90U`:TBT)) |>
+  mutate(
+    `Campus Total` = TRUE,
+    # 3 days transmissibility
+    transmission_start = positive_result - days(3)
+    ) |>
+  pivot_longer(`90U`:`Campus Total`, names_to = 'site') |>
+  filter(value) |>
+  select(-value) |> 
+  mutate(site = fct_relevel(site, "Campus Total", after = 0L))
+
+uo_pred <- read_rds(here('results/uo_pred.rds'))
+uo_df <- cube |> filter(type == 'University')
+
+# create a 3-panel fig for each of 6 buildings.
+map(
+  # site names for filtering 
+  .x = uo_df$site |> unique() |> str_remove('UO_'),
+  .f = ~plot_uo_pred_swab_case(
+    swab_data = uo_df,
+    case_data = cases_long,
+    pred_data = uo_pred,
+    site_select = .x
+  )
+) |> wrap_plots(guides = 'collect', ncol = 2)
+
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+#### Model summary
+
+These tables show the model coefficients and statistics.
+
+```{r model glance}
+broom.mixed::glance(swab_model) |> 
+  mutate_if(is.numeric, round, 2) |> 
+  kableExtra::kable(caption = 'Model statistics',
+                    format = "html") |> 
+  kableExtra::kable_styling(bootstrap_options = "striped", 
+                            full_width = F, position = "left")
+```
+
+------------------------------------------------------------------------
+
+```{r model tidy}
+broom.mixed::tidy(swab_model) |>
+  mutate(p.value = as.character(p.value)) |> 
+  mutate_if(is.numeric, round, 3) |> 
+  mutate(p.value = as.numeric(p.value)) |> 
+  kableExtra::kable(caption = 'Model parameters',     
+                    format = "html") |> 
+  kableExtra::kable_styling(bootstrap_options = "striped",
+                            full_width = F, position = "left")
+# tidy(swab_model, effects = 'ran_vals')
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+```{r plot model intercepts}
+sjPlot::tab_model(
+  swab_model,
+  show.re.var = TRUE,
+  pred.labels = c("(Intercept)", "Swabs @ t-1week"),
+  dv.labels = "Relation between UO cases (y/n) and proportion\n of positive swabs the previous week"
+)
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+#### Model response curves
+
+This plot shows the modelling data as points (detection lagged 1 week and cases at a given site- y/n), as well as how the probability of future cases varies by the previous weeks detection level and site, according to our model (curves).
+
+```{r response curves, fig.height=4.5}
+read_rds(here('fig/plt_model_resp_curves.rds')) +
+  labs(subtitle = 'Points show case/swab data and curves show model probability values')
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+#### Sites
+
+This plot shows the odds ratios for the intercepts of the model (an intercept for each site).
+
+```{r model_sites}
+# random effect plot: site intercepts; axes are flipped
+sjPlot::plot_model(swab_model, type = 're') +
+  theme_light() +
+  labs(title = "Random effects", y = 'Odds Ratio')
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+### Swabs and Cases
+
+This panel shows the cases counts at UO over the course of our sampling period. The case data shown represents the days on which a positive test was reported (black rug lines) and the presumed start of transmissiblity for each case (red lines).
+
+```{r cases and swabs, fig.height=6, fig.width=8, fig.align='center'}
+# generated from file R/plot_UO_case_load.R
+read_rds(here('fig/plt_cases_swabs.rds'))
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+### Swabs, Wifi, and CO~2~
+
+This panel shows linked data from swab results, CO~2~ readings, and wifi traffic (number of users \@ peak, daily) during our study period. Unfortunately, we do not have wifi data for 90U. <br>
+
+```{r uo multivariate panel, fig.width=12.5, fig.asp=0.6}
+source(here('R/uott_presentation.R'))
+uo_multivariate & theme(text = element_text(size = 13))
+rm(uo_multivariate)
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+### Wifi Traffic
+
+```{r wifi_ts, fig.height=6, fig.width=8}
+wifi <- 
+  read_rds(here('data/uo_wifi.rds')) |> 
+  filter(date >= '2021-09-21')
+
+plot_UO_wifi_ts(wifi, cube)
+rm(wifi)
+```
+
+This panel shows a time-series of the daily peak number of wifi users at UO facilities. Sampling days are highlighted in blue.\
+<br>
+
+### 

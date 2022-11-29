@@ -1,6 +1,6 @@
 ## use this script to update data for UO cases.
 
-# It reads UO_cases_to_date.rdsh
+# It reads UO_cases_to_date.rds
 # Add cases to .csv file; clean up missing values and conform to
 # existing data types; need to do by hand as source is unpredictable!
 # add an indicator for 'new' data  -> filter these new cases for addition to .rds data
@@ -34,7 +34,7 @@ cases <-
 cases |> glimpse()
 
 # find min date in data
-md <-
+min_date <-
   cases |>
   select(where(~is.Date(.x))) |>
   pivot_longer(cols = everything()) |>
@@ -46,7 +46,7 @@ md <-
 cases <- cases |>
   mutate(across(
     .cols = where(~is.Date(.x)),
-    .fns = ~{as.numeric(.x - md)},
+    .fns = ~{as.numeric(.x - min_date)},
     .names = 'dt_{.col}',
     )) |> glimpse()
 
@@ -64,7 +64,7 @@ cases <- cases |>
     imp2 = predict(pos_mod2, newdata = cases),
     imp3 = predict(pos_mod3, newdata = cases),
   ) |>
-  mutate(across(starts_with('imp'), ~as_date(.x + md))) |>
+  mutate(across(starts_with('imp'), ~as_date(.x + min_date))) |>
   group_by(case) |>
   mutate(imp = mean(c(imp1, imp2, imp3), na.rm = T)) |>
   ungroup() |>
