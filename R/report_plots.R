@@ -529,8 +529,6 @@ plot_co2 <- function(df_swab, legend, axis_titles){
 # Combination plots ----
 make_uo_panel <- function(swabs, wifi) {
 
-
-
   make_plots <- function(df_swab,
                          df_co2,
                          df_wifi,
@@ -575,7 +573,7 @@ make_uo_panel <- function(swabs, wifi) {
 
   #### data ------
   swabs_df <-
-    rswabs |>
+    swabs |>
     mutate(date = date_swab) |>
     filter(!negative_control) |>
     mutate(
