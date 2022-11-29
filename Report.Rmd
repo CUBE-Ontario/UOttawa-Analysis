@@ -8,6 +8,8 @@ output: html_document
 library(tidyverse)
 library(here)
 library(ggiraph)
+library(patchwork)
+
 source(here('R/report_plots.R'))
 ```
 
@@ -40,6 +42,7 @@ uottawa_ww <-
       source == 'uo_rgn' ~ 'RGN',
       source == 'uo_st' ~ 'ST',
       source == 'uo_tbt' ~ 'TBT',
+      TRUE ~ 'not matched'
     )
   )
 
@@ -55,6 +58,11 @@ summarise_wastewater <- function(){
   pivot_wider(names_from = stat, values_from = value) |> 
   mutate(.lower = mean - sd, .upper = mean + sd)   
 }
+
+wifi <- 
+  read_rds(here('data/uo_wifi.rds')) |> 
+  filter(date >= min(swabs$date_swab), date <= max(swabs$date_swab))
+
 ```
 
 
@@ -143,7 +151,7 @@ swab_model <-
 ------------------------------------------------------------------------
 
 ```{r model}
-swab_model <- read_rds(here('data/uottawa/model/uo_swab_model.rds'))
+swab_model <- read_rds(here('model/uo_swab_model.rds'))
 ```
 
 <br>
@@ -170,17 +178,16 @@ cases_long <-
   select(-value) |> 
   mutate(site = fct_relevel(site, "Campus Total", after = 0L))
 
-uo_pred <- read_rds(here('results/uo_pred.rds'))
-uo_df <- cube |> filter(type == 'University')
+uo_pred <- read_rds(here('model/uo_pred.rds'))
 
 # create a 3-panel fig for each of 6 buildings.
 map(
   # site names for filtering 
-  .x = uo_df$site |> unique() |> str_remove('UO_'),
+  .x = swabs$site |> unique() |> str_remove('UO_'),
   .f = ~plot_uo_pred_swab_case(
-    swab_data = uo_df,
-    case_data = cases_long,
-    pred_data = uo_pred,
+    swabs = swabs,
+    cases = cases_long,
+    preds = uo_pred,
     site_select = .x
   )
 ) |> wrap_plots(guides = 'collect', ncol = 2)
@@ -248,7 +255,7 @@ read_rds(here('fig/plt_model_resp_curves.rds')) +
 
 ------------------------------------------------------------------------
 
-#### Sites
+#### Random Intercepts for Sites
 
 This plot shows the odds ratios for the intercepts of the model (an intercept for each site).
 
@@ -281,7 +288,11 @@ read_rds(here('fig/plt_cases_swabs.rds'))
 This panel shows linked data from swab results, CO~2~ readings, and wifi traffic (number of users \@ peak, daily) during our study period. Unfortunately, we do not have wifi data for 90U. <br>
 
 ```{r uo multivariate panel, fig.width=12.5, fig.asp=0.6}
-source(here('R/uott_presentation.R'))
+
+## return plot
+uo_multivariate <- make_uo_panel()
+write_rds(uo_multivariate, here('fig/uo_multivariate.rds'))
+
 uo_multivariate & theme(text = element_text(size = 13))
 rm(uo_multivariate)
 ```
@@ -293,12 +304,9 @@ rm(uo_multivariate)
 ### Wifi Traffic
 
 ```{r wifi_ts, fig.height=6, fig.width=8}
-wifi <- 
-  read_rds(here('data/uo_wifi.rds')) |> 
-  filter(date >= '2021-09-21')
 
-plot_UO_wifi_ts(wifi, cube)
-rm(wifi)
+plot_UO_wifi_ts(wifi, swabs)
+
 ```
 
 This panel shows a time-series of the daily peak number of wifi users at UO facilities. Sampling days are highlighted in blue.\
