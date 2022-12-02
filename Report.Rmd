@@ -33,7 +33,8 @@ swabs <- read_rds(here('data/cube.rds')) |>
 # waste water data 
 raw_ww <-
   readxl::read_excel(here::here('data/wastewater.xlsx')) |>
-  janitor::clean_names()
+  janitor::clean_names() |> 
+  glimpse()
 
 uottawa_ww <-
   raw_ww |>
@@ -44,16 +45,24 @@ uottawa_ww <-
       str_remove('^Data - uOttawa - ') |>
       str_remove('.xlsx$'),
     site = case_when(
-      source == 'uo_aa' ~ 'AA',
-      source == 'uo_fa' ~ 'FA',
-      source == 'uo_ft' ~ 'FT',
-      source == 'uo_na' ~ 'NA',
-      source == 'uo_rgn' ~ 'RGN',
-      source == 'uo_st' ~ 'ST',
-      source == 'uo_tbt' ~ 'TBT',
+      source == 'uo_aa' ~ 'Annex Residence',
+      source == 'uo_fa' ~ 'Faculty of Soc. Sci.',
+      source == 'uo_ft' ~ 'Friel Residence',
+      source == 'uo_na' ~ 'North sampling Site',
+      source == 'uo_rgn' ~ 'Robert Guidon Hall',
+      source == 'uo_st' ~ 'South Sampling Site',
+      source == 'uo_tbt' ~ 'Tabaret Hall',
       TRUE ~ 'not matched'
     )
-  )
+  ) |> 
+  filter(
+    sample_date > '2021-09-15', 
+    sample_date < '2022-05-05',
+    site != 'Robert Guidon Hall',
+    !is.na(sample_date),
+    !is.na(site),
+    !is.na(viral_copies_per_copies_pep_avg)
+    )
 
 # ottawa wastewater data: summary
 summarise_wastewater <- function(){
@@ -74,6 +83,54 @@ wifi <-
 
 ```
 
+-----
+
+## Waste Water - UO
+
+
+```{r fig.width=8, fig.height=7}
+uottawa_ww |>
+  ggplot(aes(sample_date, viral_copies_per_copies_pep_avg, color = site)) +
+  geom_path(alpha = 0.6) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV') +
+  facet_wrap(~site, ncol = 2)
+
+```
+
+```{r fig.height=4, fig.width=8}
+ottawa_u_mean_signal <- 
+  uottawa_ww |> 
+  group_by(sample_date) |> 
+  summarise(
+    mean_signal = mean(viral_copies_per_copies_pep_avg),
+    sd = sd(viral_copies_per_copies_pep_avg)
+    )
+
+uottawa_ww |> 
+  ggplot(aes(sample_date, viral_copies_per_copies_pep_avg)) +
+  geom_point(alpha = 0.5, shape = 1) +
+  geom_point(data = ottawa_u_mean_signal,
+             aes(y = mean_signal),
+             alpha = 0.8,
+             color = 'cornflowerblue') +
+  geom_path(data = ottawa_u_mean_signal,
+            aes(y = mean_signal),
+            alpha = 0.8,
+            color = 'cornflowerblue') +
+  labs(x = 'Date',
+       y = 'SARS-CoV-2 / PPMoV',
+       title = 'UOttawa Waste-Water Signal',
+       subtitle = 'Daily mean across sampling sites'
+       )
+
+
+```
+
+
+
+
+--------
 
 
 ## 📊 Summary
@@ -109,25 +166,7 @@ plot_timeseries_locations(
   )
 ```
 
-------------------------------------------------------------------------
-
-## Waste Water - UO
-
-
-```{r}
-uottawa_ww |>
-  ggplot(aes(sample_date, viral_copies_per_copies_pep_avg, color = site)) +
-  geom_line(alpha = 0.5) +
-  geom_point(alpha = 0.5) +
-  labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV')
-
-rm(raw_ww, uottawa_ww)
-```
-
-
-
------
-
+----------------------------------------------------------------------
 
 
 ## Model {.tabset}
