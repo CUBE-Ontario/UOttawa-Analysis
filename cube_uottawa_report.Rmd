@@ -71,6 +71,18 @@ raw_ww <-
   readxl::read_excel(here::here('data/wastewater.xlsx')) |>
   janitor::clean_names()
 
+ww_lookup <- tribble(
+  ~site_abbr, ~site,
+  'UO_AA',	'Annex Residence',
+  'UO_FA',	'Faculty of Social Sciences',
+  'UO_FT',	'Friel Residence',
+  'UO_na',	'Northern sampling site',
+  'UO_RGN',	'Roger Guindon Hall',
+  'UO_ST',	'Southern sampling site',
+  'UO_TBT',	'Tabaret Hall'
+)
+
+# OttawaU data from R. Delatolla
 uottawa_ww <-
   raw_ww |>
   filter(!is.na(sample_date)) |>
@@ -102,7 +114,7 @@ uottawa_ww <-
             signal = viral_copies_per_copies_pep_avg)
 
 # ottawa wastewater data: summary
-summarise_wastewater <- function(){
+regional_wastewater <- 
   read_rds(here('data/ww_ottawa.rds')) |> 
   select(sample_date, starts_with('cov_')) |> 
   pivot_longer(contains('cov_')) |> 
@@ -112,13 +124,61 @@ summarise_wastewater <- function(){
   select(-name) |> 
   pivot_wider(names_from = stat, values_from = value) |> 
   mutate(.lower = mean - sd, .upper = mean + sd)   
-}
 
 wifi <- 
   read_rds(here('data/uo_wifi.rds')) |> 
   filter(date >= min(swabs$date_swab), date <= max(swabs$date_swab))
 
 ```
+
+----
+
+## Where
+
+Are these buildings?
+
+```{r}
+
+swab_coords <- tribble(
+  ~site, ~name, ~lat, ~lng,
+  'MRT', 'Morrisette Hall (MRT)', 45.423239101483546, -75.68428970961207,
+  'MNT', 'Montpetit', 45.42254171025894, -75.68265871464943,
+  '90U', '90 University', 45.42242555707402, -75.6850144991752,
+  'DMS', 'Desmarais Bldg.', 45.42387679340988, -75.68727075448753,
+  'TBT', 'Tabaret Hall', 45.42450940162542, -75.68631900184072,
+  'LPR',  'Louis Pasteur Bldg.', 45.421375668614466, -75.68026389993058,
+)
+
+ww_coords <- tribble(
+  ~site, ~name, ~lat, ~lng,
+  'aa', 'Annex Residence', 45.42678129026445, -75.68034405960745,
+  'fa', 'Faculty of Soc. Sci.', 45.421624722628515, -75.68390386012699,
+  'ft', 'Friel Residence', 45.43043440080566, -75.68290766533741,
+  'na', 'North sampling Site', NA, NA,
+  'st', 'South Sampling Site', NA, NA,
+  'tbt', 'Tabaret Hall', 45.42450940162542, -75.68631900184072
+)
+
+leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
+  leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
+  leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 15) |> 
+  leaflet::addCircleMarkers(~lng, ~lat, label =  ~name, popup = ~name, 
+                            radius = 2, color = '#440099') |> 
+  leaflet::addLabelOnlyMarkers(
+    ~lng, ~lat, label =  ~site, 
+    labelOptions = leaflet::labelOptions(
+      noHide = T, direction = 'top', textOnly = T, 
+    )) |> 
+  leaflet::addCircleMarkers(~lng, ~lat, label =  ~site, 
+                            radius = 2, color = '#440099') |> 
+  leaflet::addCircleMarkers(
+    data = ww_coords, ~lng, ~lat, label =  ~name, popup =  ~name, 
+    radius = 4, color = '#f96999')
+  
+```
+
+
+For WW data, I am still unsure which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to.
 
 -----
 
@@ -135,6 +195,34 @@ uottawa_ww |>
   facet_wrap(~site, ncol = 2)
 
 ```
+
+## Waste Water - Regional
+
+```{r}
+regional_wastewater |> 
+  ggplot() +
+  geom_pointrange(
+    aes(sample_date, mean, color = target, fill = target,
+        ymin = .lower, ymax = .upper),
+    size = 0.25, fatten = 1, alpha = 0.25
+    ) +
+  geom_smooth(
+    aes(sample_date, mean, color = target, fill = target),
+    span = 0.2, alpha = 0.15
+  ) +
+  geom_rect(data = swabs |> summarise(xmin = min(date_swab),
+                                      xmax = max(date_swab),
+                                      ymin = -Inf, 
+                                      ymax = Inf),
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+             lty = 2, alpha = 0.1) +
+  geom_text(aes(x = min(swabs$date_swab) + 5, y = 0.0035, 
+                label = 'UOttawa study'),
+            color = 'grey50', hjust = 0) +
+  scale_shape(solid = F) +
+  labs(x = 'Date', y = 'SARS-CoV-2 Target / PPMoV ')
+```
+
 
 
 ----
@@ -274,8 +362,7 @@ campus_ww_swab_summary |>
 <br>
 <br>
 
---------
-
+------------------------------------------------------------------------
 
 ## 📊 Summary
 

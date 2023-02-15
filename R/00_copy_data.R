@@ -14,7 +14,7 @@ fs::file_copy(
   overwrite = T
   )
 
-# ottawa city waste water readings
+# ottawa city waste water readings from cube_data_analysis/
 fs::file_copy(
   path = "~/Documents/LTRI/CUBE_project/cube_data_analysis/data/ww_ottawa.rds",
   new_path = here::here('data/ww_ottawa.rds'),
