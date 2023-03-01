@@ -244,7 +244,7 @@ plot_site <- function(uo_pred, uo_swabs, uo_cases, selected) {
         yend = location
       ),
       position = position_jitter(width = 0.4),
-      size = 5,
+      linewidth = 5,
       color = 'black',
       alpha = 0.25
     ) +

@@ -17,7 +17,9 @@ output:
 - [x]  Biweekly summary of variables
   - [x]  Figures plus events timeline
   - [x]  Correlation & Heatmap
-- [ ]  Case Date Imputation - use MICE instead?
+  - [ ]  Add case counts
+- [ ]  Case Date Imputation (sanity check) - use MICE instead?
+- [ ]  Model for cases ~ .
 - [ ]  Finish written methods and results
 
 
@@ -47,15 +49,25 @@ get_date_week <- function(x){
   str_glue("{y}-{w}")
 }
 
+# get biweekly bin date for vector of dates
 get_date_biweekly <- function(x){
-  z <- day_of_week <-  lubridate::wday(x)
+  day_of_week <-  lubridate::wday(x)
   case_when(
-    z %in% 1:3 ~ x + 3 - z,
-    TRUE ~ x + 5 - z,
+    day_of_week %in% 1:3 ~ x + 3 - day_of_week,
+    TRUE ~ x + 5 - day_of_week,
   )
 }
 
-    
+# dates 2021-2022 with biweekly groups
+biweekly_date_sequence <- function(){
+  tibble(
+    date = seq(
+      as_date('2021-01-01'), 
+      as_date('2022-12-31'), 
+      by = 1)
+  ) |> 
+    mutate(biweek = get_date_biweekly(date))
+}
 
 # lookup table for date
 week_midpoint_date_lookup <- function(start = '2021-01-01', end = '2023-01-01'){
@@ -159,6 +171,21 @@ event_dates <-
   ) |> 
   mutate(across(start:end, as_date))
 
+# case data from UOttawa admin
+cases <- 
+  read_rds(here('data/latest_uo_cases.rds')) |> 
+  select(case, role, positive_result, `90U`:TBT) |>
+  mutate(positive_result = as_date(as.character(positive_result)),
+         biweek = get_date_biweekly(positive_result),
+         role = case_when(
+           role %in% c('Contractor', 'Employee', 'Student & employee') ~
+             'Staff',
+           TRUE ~ 'Student'
+                       
+         )) |> 
+  nest(associated_sites = `90U`:TBT)
+
+
 # Summaries --------------------------------------------------
 
 swabs_tidy <- swabs |> 
@@ -173,8 +200,7 @@ positivity_summary <- function(swabs){
       n = n(),
       x = sum(pcr_positive == 'Positive', na.rm = F),
       positivity = round(100 * x / n, digits = 1),
-      .groups = 'drop'
-    )
+      .groups = 'drop')
 }
 
 co2_summary <- function(swabs){
@@ -183,8 +209,7 @@ co2_summary <- function(swabs){
       n = n(),
       co2_vals = list(co2),
       co2_mean = mean(co2, na.rm = T),
-      .groups = 'drop'
-    )
+      .groups = 'drop')
 }
   
 # overall summary
@@ -219,7 +244,7 @@ ww_coords <- tribble(
   # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
 )
 
-fig_sites_map <- 
+figure_sites_map <- 
   leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
   leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
   leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 14) |> 
@@ -256,6 +281,9 @@ Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with indiv
 
 rs_results <- rs_data |> 
   glue::glue_data()
+
+
+
 ```
 
 ----
@@ -272,8 +300,8 @@ cat(rs_abstract)
 
 ### Written Results
 
-```{r}
-
+```{r results='asis'}
+cat(rs_results)
 ```
 
 ----
@@ -293,6 +321,30 @@ swab_summary |>
 ```
 
 ---
+
+```{r}
+
+
+# uottawa cases - biweekly counts 
+cases_biweekly <- 
+  cases |> 
+  select(case, biweek, role) |> 
+  group_by(biweek) |> 
+  summarise(cases = n(),
+            cases_student = sum(role == 'Student'),
+            cases_staff = sum(role == 'Staff'),
+            ) |> 
+  right_join(biweekly_date_sequence() |>
+               filter(biweek < '2022-02-03') |> 
+               distinct(biweek),
+             by = 'biweek') |> 
+  mutate(across(where(is.integer), ~if_else(is.na(.), 0L, .))) |> 
+  view()
+
+
+```
+
+
 
 ### Figure 1: Timeseries
 
@@ -496,13 +548,51 @@ fig1_ott_ww <-
   remove_grid() +
   theme(axis.title.y = ggtext::element_markdown(lineheight = 1)) 
 
+fig1_cases <-
+  cases_biweekly |> 
+  select(biweek, cases_student, cases_staff) |> 
+  pivot_longer(-biweek) |> 
+  mutate(name = str_remove(name, 'cases_') |> str_to_title()) |> 
+  ggplot() +
+  geom_vline(data = tibble(x = as_date('2022-02-03')),
+             aes(xintercept = x),
+             lty = 2, color = 'gray') +
+  geom_text(data = tibble(x = as_date('2022-02-05'),
+                          y = 18,
+                          label = 'End of data'),
+            aes(x, y, label = label),
+            size = 3,
+            hjust = 0
+  ) +
+  geom_col(aes(biweek, value, fill = name), 
+           size = 0.1,
+           width = 4, color = 'white') +
+  labs(x = NULL,
+       y = NULL,
+       fill = NULL,
+       subtitle = 'UOttawa COVID-19 Cases',
+  ) +
+  scale_fill_carto_d() +
+  scale_x_study_dates() +
+  remove_grid() +
+  theme(
+    axis.title.y = ggtext::element_markdown(lineheight = 1),
+    legend.position = c(0.9, 0.4),
+    legend.key.size = unit(1, 'mm'),
+    legend.background = element_rect(color = 'grey')
+    ) 
 
-figure_1 <- wrap_plots(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi,
-           fig1_uo_ww, fig1_ott_ww) & 
+
+
+figure_1 <- wrap_plots(
+    fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
+    fig1_wifi, fig1_uo_ww, fig1_ott_ww
+  ) & 
   plot_layout(ncol = 1, heights = c(1))
 
-rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww)
-```
+rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1_cases)
+
+``` 
 
 
 ```{r fig.height=7, fig.width=5}
@@ -567,7 +657,7 @@ corr_pearson |>
 Where are these collection sites?
 
 ```{r}
-fig_sites_map
+figure_sites_map
 ```
 
 **It remains unclear** which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to (not mapped).
@@ -982,12 +1072,31 @@ rm(uo_multivariate)
 ### Wifi Traffic
 
 ```{r wifi_ts, fig.height=6, fig.width=8}
-
 plot_UO_wifi_ts(wifi, swabs)
-
 ```
 
 This panel shows a time-series of the daily peak number of wifi users at UO facilities. Sampling days are highlighted in blue.\
 <br>
 
-### 
+------
+
+### Cases: Imputation
+
+I fitted linear models to ascertain the relationship between the positive result date with the symptoms-began date, and/or the isolation-period-end date (3 combinations). I used the three linear models to impute missing result dates by averaging out the predictions of the three models (where data was available).
+Data are not missing at random: most of the missing values occur in Jan 2022 as testing became less common and more difficult to access (?). Collection of case records was abandoned by the university altogether in Feb 2022.
+
+```{r}
+# read_rds(here('fig/imputed_uo_case_dates.rds'))
+```
+
+
+
+<!-- ```{r echo=T} -->
+<!-- # ~1/4 of cases never tested, only reported symptoms & isolated   -->
+<!-- cases |> count(confirmed_by_test) -->
+
+<!-- # increasing to 40% not tested in early 2022 -->
+<!-- cases |> -->
+<!--   filter(positive_result > '2022-01-01') |>  -->
+<!--   count(confirmed_by_test) -->
+<!-- ``` -->

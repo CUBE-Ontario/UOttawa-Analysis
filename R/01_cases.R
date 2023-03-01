@@ -31,9 +31,6 @@ cases <-
          role = role |> str_to_sentence() |> as_factor()) |>
   unnest_wider(locations)
 
-
-
-
 # find min date in data
 min_date <-
   cases |>
@@ -63,11 +60,11 @@ list(pos_mod, pos_mod2, pos_mod3) |> map(broom::tidy)
 
 cases
 
-# imputed values would be created as follows
-# added 4 days to symptoms began to get result date.
-# subtract 14 days to get result date
+# imputed values would be similar to
+# adding 4 days to symptoms began to get result date.
+# subtracting 14 days from isolation end to get result date.
 
-cases <- cases |>
+cases_imputed <- cases |>
   mutate(
     imp1 = predict(pos_mod, newdata = cases),
     imp2 = predict(pos_mod2, newdata = cases),
@@ -75,28 +72,33 @@ cases <- cases |>
   ) |>
   mutate(across(starts_with('imp'), ~as_date(.x + min_date))) |>
   group_by(case) |>
-  mutate(imp = mean(c(imp1, imp2, imp3), na.rm = T)) |>
+  mutate(imputed_result_date = mean(c(imp1, imp2, imp3), na.rm = T)) |>
   ungroup() |>
   mutate(
     imputed = ifelse(is.na(positive_result), T, F),
-    positive_result = ifelse(is.na(positive_result), imp, positive_result) |> as_date(),
+    positive_result = ifelse(
+      is.na(positive_result),
+      imputed_result_date,
+      positive_result
+    ) |>
+      as_date(),
   )
 
+#
+# imputed_dates_fig <- cases_imputed |>
+#   filter(positive_result > '2021-08-01') |>
+#   ggplot(aes(x = positive_result, y = imputed_result_date)) +
+#   # geom_smooth(se = FALSE, color = 'gray') +
+#   geom_abline(slope = 1, color = 'gray') +
+#   geom_point(alpha = 0.5, size = 0.5, aes(color = imputed)) +
+#   ggplot2::coord_equal() +
+#   labs(x = 'Positive Result Date', y = 'Imputed Date',
+#        caption = 'grey line shows where imputated = actual') +
+#   theme_light()
 
-imputed_dates_fig <- cases |>
-  filter(positive_result > '2021-08-01') |>
-  ggplot(aes(x = positive_result, y = imp)) +
-  # geom_smooth(se = FALSE, color = 'gray') +
-  geom_abline(slope = 1, color = 'gray') +
-  geom_point(alpha = 0.5, size = 0.5, aes(color = imputed)) +
-  ggplot2::coord_equal() +
-  labs(x = 'Positive Result Date', y = 'Imputed Date',
-       caption = 'grey line shows where imputated = actual') +
-  theme_light()
+cases_imputed |> select(-matches('imp$|imp[0-9]+'), -starts_with('dt'))
 
-cases |> select(-matches('imp$|imp[0-9]+'), -starts_with('dt'))
-
-write_rds(cases, here('data/latest_uo_cases.rds'))
-write_rds(imputed_dates_fig, here('fig/imputed_uo_case_dates.rds'))
+write_rds(cases_imputed, here('data/latest_uo_cases.rds'))
+# write_rds(imputed_dates_fig, here('fig/imputed_uo_case_dates.rds'))
 
 
