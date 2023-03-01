@@ -9,13 +9,28 @@ output:
     theme: spacelab
 ---
 
+----
+
+## TODO
+
+- [x]  Site summary data
+- [x]  Biweekly summary of variables
+  - [x]  Figures plus events timeline
+  - [x]  Correlation & Heatmap
+- [ ]  Case Date Imputation - use MICE instead?
+- [ ]  Finish written methods and results
+
+
+----
+
+
 ```{r setup, echo=F}
 knitr::opts_chunk$set(echo = F, message = F, warning = F)
-
 ```
 
 
 ```{r}
+# Load ------------------------------------------------------
 library(tidyverse)
 library(here)
 library(ggiraph)
@@ -23,6 +38,7 @@ library(patchwork)
 ggplot2::theme_set(theme_bw())
 source(here('R/report_plots.R'))
 
+# Functions --------------------------------------------------
 
 # creates yyyy-ww label for grouping data
 get_date_week <- function(x){
@@ -31,8 +47,18 @@ get_date_week <- function(x){
   str_glue("{y}-{w}")
 }
 
+get_date_biweekly <- function(x){
+  z <- day_of_week <-  lubridate::wday(x)
+  case_when(
+    z %in% 1:3 ~ x + 3 - z,
+    TRUE ~ x + 5 - z,
+  )
+}
+
+    
+
 # lookup table for date
-week_midpoint_date_lookup <- function(start = '2022-01-01', end = '2025-01-01'){
+week_midpoint_date_lookup <- function(start = '2021-01-01', end = '2023-01-01'){
   ends = lubridate::as_date(c(start, end))
   tibble(
     date = seq(ends[1], ends[2], by = 1),
@@ -43,11 +69,14 @@ week_midpoint_date_lookup <- function(start = '2022-01-01', end = '2025-01-01'){
     group_by(week) |> 
     summarise(date = mean(date))
 }
+
+
 binom_ci <- function(x, n){
   Hmisc::binconf(x, n, method = 'wilson', alpha = 0.05) |> 
     as_tibble() |> 
     janitor::clean_names()
 }
+
 get_binom_ci <- function(data){
   data |> 
     summarise(
@@ -58,63 +87,50 @@ get_binom_ci <- function(data){
     unnest(binconf) |> 
     mutate(across(c(point_est, lower, upper), ~(.x*100) |> round(1)))
 }
-```
 
+# Data -------------------------------------------------------
 
-```{r}
 # swab data
-swabs <- read_rds(here('data/cube.rds')) |> 
+swabs <- 
+  read_rds(here('data/cube.rds')) |> 
   filter(str_detect(site, '^UO_')) 
 
-# waste water data 
-raw_ww <-
-  readxl::read_excel(here::here('data/wastewater.xlsx')) |>
-  janitor::clean_names()
-
-ww_lookup <- tribble(
+# lookup table for waste water site names
+lookup_ww <- tribble(
   ~site_abbr, ~site,
   'UO_AA',	'Annex Residence',
   'UO_FA',	'Faculty of Social Sciences',
   'UO_FT',	'Friel Residence',
-  'UO_na',	'Northern sampling site',
+  'UO_NA',	'Northern sampling site',
   'UO_RGN',	'Roger Guindon Hall',
   'UO_ST',	'Southern sampling site',
   'UO_TBT',	'Tabaret Hall'
 )
 
-# OttawaU data from R. Delatolla
+# UOttawa waste water data from R. Delatolla
 uottawa_ww <-
-  raw_ww |>
-  filter(!is.na(sample_date)) |>
+  readxl::read_excel(here::here('data/ww_university.xlsx')) |>
+  janitor::clean_names() |> 
+  mutate(sample_date = as_date(sample_date)) |> 
+  filter(
+    sample_date > '2021-09-15', 
+    sample_date < '2022-05-05',
+    !is.na(viral_copies_per_copies_pep_avg),
+    site != 'UO_RGN'
+    ) |> 
+  left_join(lookup_ww, by = c('site' = 'site_abbr')) |> 
   mutate(
     source =
       source_name |>
       str_remove('^Data - uOttawa - ') |>
-      str_remove('.xlsx$'),
-    site = case_when(
-      source == 'uo_aa' ~ 'Annex Residence',
-      source == 'uo_fa' ~ 'Faculty of Soc. Sci.',
-      source == 'uo_ft' ~ 'Friel Residence',
-      source == 'uo_na' ~ 'North sampling Site',
-      source == 'uo_rgn' ~ 'Robert Guidon Hall',
-      source == 'uo_st' ~ 'South Sampling Site',
-      source == 'uo_tbt' ~ 'Tabaret Hall',
-      TRUE ~ 'not matched'
-    )
+      str_remove('.xlsx$')
   ) |> 
-  filter(
-    sample_date > '2021-09-15', 
-    sample_date < '2022-05-05',
-    site != 'Robert Guidon Hall',
-    !is.na(sample_date),
-    !is.na(site),
-    !is.na(viral_copies_per_copies_pep_avg)
-    ) |> 
-  transmute(site, sample_date, 
+  transmute(site,
+            sample_date, 
             signal = viral_copies_per_copies_pep_avg)
 
-# ottawa wastewater data: summary
-regional_wastewater <- 
+# ottawa wastewater data: daily means
+regional_ww <- 
   read_rds(here('data/ww_ottawa.rds')) |> 
   select(sample_date, starts_with('cov_')) |> 
   pivot_longer(contains('cov_')) |> 
@@ -125,19 +141,63 @@ regional_wastewater <-
   pivot_wider(names_from = stat, values_from = value) |> 
   mutate(.lower = mean - sd, .upper = mean + sd)   
 
+# data from university of ottawa
 wifi <- 
   read_rds(here('data/uo_wifi.rds')) |> 
-  filter(date >= min(swabs$date_swab), date <= max(swabs$date_swab))
+  filter(date >= min(swabs$date_swab), 
+         date <= max(swabs$date_swab))
 
-```
+# important dates for context
+event_dates <- 
+  tribble(
+    ~event, ~start, ~end,
+    'Reading Week',  '2021-10-24', '2021-10-30',
+    'Holiday Break', '2021-12-22', '2022-01-04',
+    'Closure',       '2022-01-04', '2022-01-31',
+    'Closure',       '2022-02-16', '2022-02-21',
+    'Reading Week',  '2022-02-20', '2022-02-26',
+  ) |> 
+  mutate(across(start:end, as_date))
 
-----
+# Summaries --------------------------------------------------
 
-## Where
+swabs_tidy <- swabs |> 
+  filter(!negative_control, swab_type != 'sponge') |> 
+  select(date_swab, site, floor, location, pcr_positive, pcr_ct,
+         co2) |> 
+  mutate(biweek = get_date_biweekly(date_swab))
 
-Are these buildings?
+positivity_summary <- function(swabs){
+  swabs |> 
+    summarise(
+      n = n(),
+      x = sum(pcr_positive == 'Positive', na.rm = F),
+      positivity = round(100 * x / n, digits = 1),
+      .groups = 'drop'
+    )
+}
 
-```{r}
+co2_summary <- function(swabs){
+  swabs |> 
+    summarise(
+      n = n(),
+      co2_vals = list(co2),
+      co2_mean = mean(co2, na.rm = T),
+      .groups = 'drop'
+    )
+}
+  
+# overall summary
+swab_summary <- 
+  swabs_tidy |> positivity_summary()
+
+# site summary
+swab_summary_sites <- swabs_tidy |> 
+  group_by(site) |> 
+  positivity_summary()
+  
+
+# Map --------------------------------------------------------
 
 swab_coords <- tribble(
   ~site, ~name, ~lat, ~lng,
@@ -154,14 +214,15 @@ ww_coords <- tribble(
   'aa', 'Annex Residence', 45.42678129026445, -75.68034405960745,
   'fa', 'Faculty of Soc. Sci.', 45.421624722628515, -75.68390386012699,
   'ft', 'Friel Residence', 45.43043440080566, -75.68290766533741,
-  'na', 'North sampling Site', NA, NA,
-  'st', 'South Sampling Site', NA, NA,
   'tbt', 'Tabaret Hall', 45.42450940162542, -75.68631900184072
+  # 'na', 'North sampling Site', NA, NA,
+  # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
 )
 
-leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
+fig_sites_map <- 
+  leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
   leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
-  leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 15) |> 
+  leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 14) |> 
   leaflet::addCircleMarkers(~lng, ~lat, label =  ~name, popup = ~name, 
                             radius = 2, color = '#440099') |> 
   leaflet::addLabelOnlyMarkers(
@@ -174,19 +235,350 @@ leaflet::leaflet(swab_coords, width = 600, height = 330) |>
   leaflet::addCircleMarkers(
     data = ww_coords, ~lng, ~lat, label =  ~name, popup =  ~name, 
     radius = 4, color = '#f96999')
+
+
+# Results ----------------------------------------------------
+
+rs_data <- lst(
+  swabs_collected = nrow(swabs_tidy),
+  positivity_ovr = swab_summary$positivity,
+  positivity_site_min = min(swab_summary_sites$positivity),
+  positivity_site_max = max(swab_summary_sites$positivity),
+)
+
+rs_abstract <- rs_data |> 
+  glue::glue_data(
+    "Over the 32-week study period, we collected {swabs_collected} swabs at six university buildings, including two buildings where wastewater surveillance was currently ongoing. 
+Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with individual buildings ranging between {positivity_site_min}% and {positivity_site_max}%.
+*Comment on when spikes in cases, swabs, and waste-water occurred….* *Comment on prediction of cases using swabs, ww, or combined approach…*
+"
+  )
+
+rs_results <- rs_data |> 
+  glue::glue_data()
+```
+
+----
+
+## New
+
+### Abstract Results
+
+```{r results='asis'}
+cat(rs_abstract)
+```
+
+---
+
+### Written Results
+
+```{r}
+
+```
+
+----
+
+### Summary Table
+
+```{r}
+swab_summary |> 
+  mutate(site = 'Overall') |> 
+  bind_rows(swab_summary_sites) |> 
+  relocate(site) |> 
+  set_names(c('Site', 'N', 'PCR-Positive', '%')) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Building Summary'
+  )
+```
+
+---
+
+### Figure 1: Timeseries
+
+```{r}
+## Figure 1: data aggregation ----
+
+# swabs biweekly summary
+swabs_biweekly <- 
+  swabs_tidy |>
+  group_by(biweek) |> 
+  positivity_summary() |> 
+  left_join(swabs_tidy |> group_by(biweek) |> co2_summary())
+
+# swabs biweekly summary by site  
+swabs_biweekly_by_site <- 
+  swabs_tidy |>
+  group_by(site, biweek) |> 
+  positivity_summary() |> 
+  left_join(swabs_tidy |> group_by(site, biweek) |> co2_summary())
+
+# UOttawa ww biweekly means
+uottawa_ww_biweekly <- 
+  uottawa_ww |> 
+  mutate(biweek = get_date_biweekly(sample_date)) |> 
+  group_by(biweek) |> 
+  summarise(signal = mean(signal),
+            n = n())
+
+# daily ww data for study period
+regional_ww_daily <- 
+  regional_ww |> 
+  filter(
+    sample_date >= min(swabs_tidy$date_swab) - 4,
+    sample_date <= max(swabs_tidy$date_swab) + 4,
+  ) |> 
+  group_by(sample_date) |> 
+  summarise(mean = mean(mean))
+
+# regional ww biweekly means
+regional_ww_biweekly <- 
+  regional_ww_daily |> 
+  mutate(biweek = get_date_biweekly(sample_date)) |> 
+  group_by(biweek) |> 
+  summarise(mean = mean(mean))
+
+# wifi site agg
+wifi_extended <- read_rds(here('data/uo_wifi.rds')) |> 
+  filter(date >= min(swabs$date_swab) - 2, 
+         date <= max(swabs$date_swab) + 2) |> 
+  mutate(biweek = get_date_biweekly(date))
+
+# overall wifi biweekly timeseries
+wifi_biweekly_sites <- 
+  wifi_extended |> 
+  group_by(biweek) |> 
+  summarise(
+    n = n(),
+    min = min(clients),
+    mean = mean(clients),
+    max = max(clients)
+  )
+# per building wifi biweekly timeseries
+wifi_biweekly <- 
+  wifi_biweek_sites <- 
+  wifi_extended |> 
+  group_by(biweek) |> 
+  summarise(
+    n = n(),
+    min = min(clients),
+    mean = mean(clients),
+    max = max(clients)
+  )
+
+## Plot Elements -----
+
+theme_color <- 'cornflowerblue'
+# layout x-axis
+scale_x_study_dates <- function(){
+    scale_x_date(
+      date_breaks = 'month',
+      date_labels = month.name[c(9:12, 1:5)] |> strtrim(3),
+      limits = c(
+        min(swabs_tidy$date_swab), 
+        max(swabs_tidy$date_swab)
+      ))
+}
+remove_x_labels <- function(){
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+}
+remove_grid <- function(){
+  theme(panel.grid.minor = element_blank(),
+        plot.subtitle = element_markdown(size = 8, hjust = 0), 
+        plot.margin = unit(c(0.1, 1, 2, 0), unit = 'mm'))
+}
+
+## Figs -----
+
+fig1_timeline <- 
+  event_dates |> 
+  ggplot(aes(x = start, xend = end, y = event, yend = event)) +
+  geom_segment(linewidth = 5, lineend = 'round',
+               color = theme_color,
+               alpha = 0.35) +
+  geom_segment(linewidth = 1, lineend = 'butt',
+             color = theme_color,
+             alpha = 0.9) +
+  geom_point(aes(x = end), color = theme_color, size = 2) +
+  geom_point(color = theme_color, size = 2) +
+  scale_x_study_dates() +
+  labs(y = '', x = NULL, subtitle = 'Timeline') +
+  remove_x_labels() +
+  remove_grid()
+
+fig1_swabs <- 
+  swabs_biweekly |> 
+  ggplot(aes(biweek, positivity)) +
+  geom_smooth(
+    size = 0.5,
+    alpha = 0.2, 
+    fill = theme_color, 
+    span = 0.4,
+    method = 'loess',
+    formula = 'y ~ x', 
+    na.rm = T) +
+  geom_point(size = 1, color = theme_color, alpha = 0.85, shape = 1) +
+  scale_x_study_dates() +
+  labs(x = NULL, y = NULL,
+       subtitle = 'Swab Positivity (%)') +
+  remove_x_labels() +
+  remove_grid()
+  
+fig1_co2 <-
+  ggplot(swabs_biweekly, aes(biweek, co2_mean)) +
+  # geom_point(
+  #   data = swabs_biweekly |> unnest(co2_vals),
+  #   aes(y = co2_vals),
+  #   shape = 1, alpha = 0.4, size = 0.4
+  # ) +
+  geom_point(color = theme_color) +
+  geom_smooth(fill = theme_color, alpha = 0.2, size = 0.5) +
+  labs(x = NULL, y = NULL,
+       subtitle = 'CO~2~ (ppm)') +
+  scale_x_study_dates() +
+  remove_x_labels() +
+  remove_grid()
+  
+fig1_wifi <-
+  wifi_biweekly |> 
+  ggplot(aes(biweek, mean)) +
+  geom_smooth(span = 0.5, 
+              size = 0.5,
+              alpha = 0.2, 
+              fill = theme_color) +
+  geom_point(
+    color = theme_color,
+    shape = 1, alpha = 1) +
+  labs(x = NULL, y = NULL,
+       subtitle = "Wi-Fi Connections") +
+  scale_x_study_dates() +
+  remove_x_labels() +
+  remove_grid()
+
+fig1_uo_ww <-
+  ggplot(uottawa_ww_biweekly,
+         aes(biweek, signal)) +
+  geom_smooth(alpha = 0.2, size = 0.5, fill = theme_color, na.rm = T) +
+  geom_point(aes(size = n),
+             color = theme_color, alpha = 0.5,
+             shape = 1,
+             na.rm = T,
+             show.legend = F) +
+  labs(
+    x = NULL, 
+    y = NULL,
+    subtitle = 'University Waste-Water',
+  ) +
+  scale_x_study_dates() +
+  scale_size(range = c(1, 3)) +
+  remove_x_labels() +
+  remove_grid()
+
+fig1_ott_ww <- 
+  ggplot(regional_ww_daily) + 
+  geom_smooth(aes(sample_date, mean), 
+              na.rm = T,
+              method = 'loess', formula = 'y ~ x',
+              span = 0.2, size = 0.5, alpha = 0.2,
+              fill = theme_color) +
+  geom_point(data = regional_ww_biweekly,
+             aes(biweek, mean),
+             na.rm = T,
+             shape = 1,
+             alpha = 0.5,
+             color = theme_color) +
+  labs(x = 'Date',
+       y = NULL,
+       subtitle = 'Regional Waste-Water',
+       ) +
+  scale_x_study_dates() +
+  remove_grid() +
+  theme(axis.title.y = ggtext::element_markdown(lineheight = 1)) 
+
+
+figure_1 <- wrap_plots(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi,
+           fig1_uo_ww, fig1_ott_ww) & 
+  plot_layout(ncol = 1, heights = c(1))
+
+rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww)
+```
+
+
+```{r fig.height=7, fig.width=5}
+figure_1
+```
+
+
+**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient C0~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV).
+
+
+#### Spearman Correlation
+
+```{r ts correlation}
+corr_df <- swabs_biweekly |> 
+  transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
+  left_join(
+    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean)
+    ) |> 
+  left_join(
+    uottawa_ww_biweekly |> transmute(biweek, `University WW` = signal),
+  ) |> 
+  left_join(
+    regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
+  )
+
+
+corr_spearman <- corr_df |> corrr::correlate(method = 'spearman')
+
+corr_spearman |> 
+  corrr::shave() |> 
+  filter(term != `Swab PCR`) |>
+  select(-`Ottawa WW`) |> 
+  kableExtra::kable(format = 'pipe', digits = 2)
+
+corr_spearman |> 
+  corrr::autoplot() +
+  labs(title = 'Spearman Correlation Coefficients')
   
 ```
 
 
-For WW data, I am still unsure which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to.
+#### Pearson Correlation
+
+```{r ts correlation pearson}
+corr_pearson <- corr_df |> corrr::correlate(method = 'pearson')
+
+corr_pearson |> 
+  corrr::shave() |> 
+  filter(term != `Swab PCR`) |> 
+  kableExtra::kable(format = 'pipe', digits = 3)
+
+corr_pearson |> 
+  corrr::autoplot() +
+  labs(title = 'Pearson Correlation Coefficients')
+```
+
+
+----
+
+### Map
+
+Where are these collection sites?
+
+```{r}
+fig_sites_map
+```
+
+**It remains unclear** which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to (not mapped).
 
 -----
 
 ## Waste Water - UO
 
-Last time, I was confused about which buildings we had obtained waste-water data for. This week, I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 on-campus sites (raw data below).
+I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 near-campus sites (raw data below).
 
-```{r fig.width=8, fig.height=7}
+```{r fig.width=6, fig.height=5}
 uottawa_ww |>
   ggplot(aes(sample_date, signal)) +
   geom_path(alpha = 0.6) +
@@ -198,36 +590,45 @@ uottawa_ww |>
 
 ## Waste Water - Regional
 
-```{r}
-regional_wastewater |> 
+```{r fig.height=3.5, fig.width=5}
+regional_ww |> 
+  group_by(sample_date) |> 
+  summarise(mean = mean(mean)) |> 
   ggplot() +
-  geom_pointrange(
-    aes(sample_date, mean, color = target, fill = target,
-        ymin = .lower, ymax = .upper),
-    size = 0.25, fatten = 1, alpha = 0.25
-    ) +
-  geom_smooth(
-    aes(sample_date, mean, color = target, fill = target),
-    span = 0.2, alpha = 0.15
-  ) +
-  geom_rect(data = swabs |> summarise(xmin = min(date_swab),
-                                      xmax = max(date_swab),
-                                      ymin = -Inf, 
-                                      ymax = Inf),
+  geom_rect(data = tibble(xmin = min(swabs$date_swab),
+                   xmax = max(swabs$date_swab),
+                   ymin = -Inf, 
+                   ymax = Inf),
             aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-             lty = 2, alpha = 0.1) +
-  geom_text(aes(x = min(swabs$date_swab) + 5, y = 0.0035, 
-                label = 'UOttawa study'),
-            color = 'grey50', hjust = 0) +
+            fill = 'grey90', color = 'gray',
+            size = 0.5,
+            lty = 2, alpha = 0.5) +
+  geom_text(aes(as_date('2022-01-01'), 0.0035, label = 'UOttawa study'),
+            color = 'darkgray') +
+  geom_point(aes(sample_date, mean), 
+             alpha = 0.76, size = 0.85, shape = 1) +
+  geom_smooth(aes(sample_date, mean), 
+              method = 'loess', formula = 'y ~ x',
+              span = 0.18, size = 0.75, alpha = 0.25,
+              fill = 'blue') +
   scale_shape(solid = F) +
-  labs(x = 'Date', y = 'SARS-CoV-2 Target / PPMoV ')
+  labs(x = 'Date',
+       y = 'Mean SARS-CoV-2 / PPMoV ',
+       color = 'PCR Target',
+       fill = 'PCR Target',
+       shape = 'PCR Target',
+       subtitle = 'Ottawa Waste-water: Combined N1 and N2 targets')
 ```
-
 
 
 ----
 
 <br>
+
+## Time-series comparison
+
+**2022-02-28 Update**: This data uses weekly aggregates, the new results use biweekly aggregates (in case you are wondering why the *r* values aren't the same).
+
 
 We probably want to summarise our swabs at the weekly (or biweekly?) level for comparison to the waste-water signal. This is what the weekly campus-wide time-series looks like compared with our weekly campus-wide swab positivity:
 
@@ -545,6 +946,9 @@ sjPlot::plot_model(swab_model, type = 're') +
 <br>
 
 ------------------------------------------------------------------------
+
+## EDA
+
 
 ### Swabs and Cases
 

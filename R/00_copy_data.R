@@ -10,7 +10,7 @@ fs::file_copy(
 # UOttawa waste water
 fs::file_copy(
   path = "~/Dropbox/CUBE Study/Data Analysis/External Data Sources/uOttawa wastewater sampling data 2022-08-24.xlsx",
-  new_path = here::here('data/wastewater.xlsx'),
+  new_path = here::here('data/ww_university.xlsx'),
   overwrite = T
   )
 

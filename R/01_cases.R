@@ -31,14 +31,14 @@ cases <-
          role = role |> str_to_sentence() |> as_factor()) |>
   unnest_wider(locations)
 
-cases |> glimpse()
+
+
 
 # find min date in data
 min_date <-
   cases |>
   select(where(~is.Date(.x))) |>
-  pivot_longer(cols = everything()) |>
-  pull(value) |>
+  unlist() |>
   as.numeric() |>
   min(na.rm = T)
 
@@ -50,13 +50,22 @@ cases <- cases |>
     .names = 'dt_{.col}',
     )) |> glimpse()
 
+# fit a model for each combination of data
 pos_mod <- lm(dt_positive_result ~ dt_symptoms_began + dt_isolation_end,
               data = cases)
 pos_mod2 <- lm(dt_positive_result ~ dt_symptoms_began, data = cases)
 pos_mod3 <- lm(dt_positive_result ~ dt_isolation_end, data = cases)
 
+#
+# check differences
 list(pos_mod, pos_mod2, pos_mod3) |> map(broom::glance)
 list(pos_mod, pos_mod2, pos_mod3) |> map(broom::tidy)
+
+cases
+
+# imputed values would be created as follows
+# added 4 days to symptoms began to get result date.
+# subtract 14 days to get result date
 
 cases <- cases |>
   mutate(
