@@ -17,9 +17,15 @@ output:
 - [x]  Biweekly summary of variables
   - [x]  Figures plus events timeline
   - [x]  Correlation & Heatmap
-  - [ ]  Add case counts
-- [ ]  Case Date Imputation (sanity check) - use MICE instead?
+  - []  Add case counts / fix figure
+  
+- [x]  Case Date Imputation - rule-based guesses
+ - +3d from symptoms
+ - +2d from test
+ - -7d from end of isolation 
+
 - [ ]  Model for cases ~ .
+- [ ]  Test high vs low traffic as FE in RE model
 - [ ]  Finish written methods and results
 
 
@@ -81,7 +87,6 @@ week_midpoint_date_lookup <- function(start = '2021-01-01', end = '2023-01-01'){
     group_by(week) |> 
     summarise(date = mean(date))
 }
-
 
 binom_ci <- function(x, n){
   Hmisc::binconf(x, n, method = 'wilson', alpha = 0.05) |> 
@@ -185,6 +190,9 @@ cases <-
          )) |> 
   nest(associated_sites = `90U`:TBT)
 
+# TODO replace old cases with new cases in report
+cases <- 
+  read_rds(here('data/cases_rule_imputed.rds'))
 
 # Summaries --------------------------------------------------
 
@@ -221,6 +229,8 @@ swab_summary_sites <- swabs_tidy |>
   group_by(site) |> 
   positivity_summary()
   
+# high-low traffic summary
+
 
 # Map --------------------------------------------------------
 
@@ -309,6 +319,7 @@ cat(rs_results)
 ### Summary Table
 
 ```{r}
+# stack summaries
 swab_summary |> 
   mutate(site = 'Overall') |> 
   bind_rows(swab_summary_sites) |> 
@@ -323,8 +334,6 @@ swab_summary |>
 ---
 
 ```{r}
-
-
 # uottawa cases - biweekly counts 
 cases_biweekly <- 
   cases |> 
@@ -459,6 +468,42 @@ fig1_timeline <-
   remove_x_labels() +
   remove_grid()
 
+
+fig1_cases <-
+  cases_biweekly |> 
+  select(biweek, cases_student, cases_staff) |> 
+  pivot_longer(-biweek) |> 
+  mutate(name = str_remove(name, 'cases_') |> str_to_title()) |> 
+  ggplot() +
+  geom_vline(data = tibble(x = as_date('2022-02-03')),
+             aes(xintercept = x),
+             lty = 2, color = 'gray') +
+  geom_text(data = tibble(x = as_date('2022-02-05'),
+                          y = 18,
+                          label = 'End of data'),
+            aes(x, y, label = label),
+            size = 3,
+            hjust = 0
+  ) +
+  geom_col(aes(biweek, value, fill = name), 
+           size = 0.1,
+           width = 4, color = 'white') +
+  labs(x = NULL,
+       y = NULL,
+       fill = NULL,
+       subtitle = 'UOttawa COVID-19 Cases',
+  ) +
+  scale_fill_carto_d() +
+  scale_x_study_dates() +
+  remove_grid() +
+  remove_x_labels() +
+  theme(
+    axis.title.y = ggtext::element_markdown(lineheight = 1),
+    legend.position = c(0.9, 0.4),
+    legend.key.size = unit(1, 'mm'),
+    legend.background = element_rect(color = 'grey')
+    ) 
+
 fig1_swabs <- 
   swabs_biweekly |> 
   ggplot(aes(biweek, positivity)) +
@@ -548,42 +593,6 @@ fig1_ott_ww <-
   remove_grid() +
   theme(axis.title.y = ggtext::element_markdown(lineheight = 1)) 
 
-fig1_cases <-
-  cases_biweekly |> 
-  select(biweek, cases_student, cases_staff) |> 
-  pivot_longer(-biweek) |> 
-  mutate(name = str_remove(name, 'cases_') |> str_to_title()) |> 
-  ggplot() +
-  geom_vline(data = tibble(x = as_date('2022-02-03')),
-             aes(xintercept = x),
-             lty = 2, color = 'gray') +
-  geom_text(data = tibble(x = as_date('2022-02-05'),
-                          y = 18,
-                          label = 'End of data'),
-            aes(x, y, label = label),
-            size = 3,
-            hjust = 0
-  ) +
-  geom_col(aes(biweek, value, fill = name), 
-           size = 0.1,
-           width = 4, color = 'white') +
-  labs(x = NULL,
-       y = NULL,
-       fill = NULL,
-       subtitle = 'UOttawa COVID-19 Cases',
-  ) +
-  scale_fill_carto_d() +
-  scale_x_study_dates() +
-  remove_grid() +
-  theme(
-    axis.title.y = ggtext::element_markdown(lineheight = 1),
-    legend.position = c(0.9, 0.4),
-    legend.key.size = unit(1, 'mm'),
-    legend.background = element_rect(color = 'grey')
-    ) 
-
-
-
 figure_1 <- wrap_plots(
     fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
     fig1_wifi, fig1_uo_ww, fig1_ott_ww
@@ -616,6 +625,9 @@ corr_df <- swabs_biweekly |>
   ) |> 
   left_join(
     regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
+  )
+left_join(
+    cases |> transmute(biweek, contains('cases')),
   )
 
 
