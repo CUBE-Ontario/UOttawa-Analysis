@@ -17,7 +17,7 @@ output:
 - [x]  Biweekly summary of variables
   - [x]  Figures plus events timeline
   - [x]  Correlation & Heatmap
-  - []  Add case counts / fix figure
+  - [x]  Add case counts / fix figure
   
 - [x]  Case Date Imputation - rule-based guesses
  - +3d from symptoms
@@ -27,17 +27,31 @@ output:
 - [ ]  Model for cases ~ .
 - [ ]  Test high vs low traffic as FE in RE model
 - [ ]  Finish written methods and results
+- [ ] Garbage data in, garbage inferences out... recurring problem for every project
 
+
+## Case Data... *help*
+
+Multiple imputation (mice) has a key assumption that data is MAR. But data is not MAR (arguably), it's missing because of some dynamics not present in the data, like availability of testing or how much the author cared to record the data properly. Using mice means making the analysis much more complicated (painfully so)... 
+
+Instead I used a simpler ad-hoc method:
+  - if positive-test-result date is available, use that, else:
+    - use -5 days from end-of-isolation date, or if not available,
+    - use the test date as is, or if not available,
+    - use +3 days from symptoms-began date
+  
+It's not really the most sound approach, but the data is questionable to begin with since many cases were self-diagnosed (not tested) and the isolation period length makes no sense (where other dates are available) in the majority of cases after 2020.
 
 ----
 
+<details>
+<summary>Analysis code</summary>
 
 ```{r setup, echo=F}
 knitr::opts_chunk$set(echo = F, message = F, warning = F)
 ```
 
-
-```{r}
+```{r data analysis, echo=TRUE}
 # Load ------------------------------------------------------
 library(tidyverse)
 library(here)
@@ -104,6 +118,36 @@ get_binom_ci <- function(data){
     unnest(binconf) |> 
     mutate(across(c(point_est, lower, upper), ~(.x*100) |> round(1)))
 }
+
+
+# Plot Elements ----------------------------------------------
+
+theme_color <- 'cornflowerblue'
+
+# layout x-axis
+scale_x_study_dates <- function(){
+    scale_x_date(
+      date_breaks = 'month',
+      date_labels = month.name[c(9:12, 1:5)] |> strtrim(3),
+      limits = c(
+        min(swabs_tidy$date_swab), 
+        max(swabs_tidy$date_swab)
+      ))
+}
+# get rid of x-axis for vertically stacked plots
+remove_x_labels <- function(){
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+}
+# no minor grid
+remove_grid <- function(){
+  theme(panel.grid.minor = element_blank(),
+        plot.subtitle = element_markdown(size = 8, hjust = 0), 
+        plot.margin = unit(c(0.1, 1, 2, 0), unit = 'mm'),
+        plot.title.position = 'panel')
+}
+
+
 
 # Data -------------------------------------------------------
 
@@ -176,23 +220,13 @@ event_dates <-
   ) |> 
   mutate(across(start:end, as_date))
 
-# case data from UOttawa admin
-cases <- 
-  read_rds(here('data/latest_uo_cases.rds')) |> 
-  select(case, role, positive_result, `90U`:TBT) |>
-  mutate(positive_result = as_date(as.character(positive_result)),
-         biweek = get_date_biweekly(positive_result),
-         role = case_when(
-           role %in% c('Contractor', 'Employee', 'Student & employee') ~
-             'Staff',
-           TRUE ~ 'Student'
-                       
-         )) |> 
-  nest(associated_sites = `90U`:TBT)
-
-# TODO replace old cases with new cases in report
-cases <- 
-  read_rds(here('data/cases_rule_imputed.rds'))
+# UOttawa cases data
+cases <-
+  read_rds(here('data/cases_rule_imputed.rds')) |> 
+  select(case, role, case_date, UC:TBT) |>
+  mutate(biweek = get_date_biweekly(case_date)) |> 
+  nest(associated_sites = UC:TBT) |> 
+  print()
 
 # Summaries --------------------------------------------------
 
@@ -230,110 +264,17 @@ swab_summary_sites <- swabs_tidy |>
   positivity_summary()
   
 # high-low traffic summary
-
-
-# Map --------------------------------------------------------
-
-swab_coords <- tribble(
-  ~site, ~name, ~lat, ~lng,
-  'MRT', 'Morrisette Hall (MRT)', 45.423239101483546, -75.68428970961207,
-  'MNT', 'Montpetit', 45.42254171025894, -75.68265871464943,
-  '90U', '90 University', 45.42242555707402, -75.6850144991752,
-  'DMS', 'Desmarais Bldg.', 45.42387679340988, -75.68727075448753,
-  'TBT', 'Tabaret Hall', 45.42450940162542, -75.68631900184072,
-  'LPR',  'Louis Pasteur Bldg.', 45.421375668614466, -75.68026389993058,
-)
-
-ww_coords <- tribble(
-  ~site, ~name, ~lat, ~lng,
-  'aa', 'Annex Residence', 45.42678129026445, -75.68034405960745,
-  'fa', 'Faculty of Soc. Sci.', 45.421624722628515, -75.68390386012699,
-  'ft', 'Friel Residence', 45.43043440080566, -75.68290766533741,
-  'tbt', 'Tabaret Hall', 45.42450940162542, -75.68631900184072
-  # 'na', 'North sampling Site', NA, NA,
-  # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
-)
-
-figure_sites_map <- 
-  leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
-  leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
-  leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 14) |> 
-  leaflet::addCircleMarkers(~lng, ~lat, label =  ~name, popup = ~name, 
-                            radius = 2, color = '#440099') |> 
-  leaflet::addLabelOnlyMarkers(
-    ~lng, ~lat, label =  ~site, 
-    labelOptions = leaflet::labelOptions(
-      noHide = T, direction = 'top', textOnly = T, 
-    )) |> 
-  leaflet::addCircleMarkers(~lng, ~lat, label =  ~site, 
-                            radius = 2, color = '#440099') |> 
-  leaflet::addCircleMarkers(
-    data = ww_coords, ~lng, ~lat, label =  ~name, popup =  ~name, 
-    radius = 4, color = '#f96999')
-
-
-# Results ----------------------------------------------------
-
-rs_data <- lst(
-  swabs_collected = nrow(swabs_tidy),
-  positivity_ovr = swab_summary$positivity,
-  positivity_site_min = min(swab_summary_sites$positivity),
-  positivity_site_max = max(swab_summary_sites$positivity),
-)
-
-rs_abstract <- rs_data |> 
-  glue::glue_data(
-    "Over the 32-week study period, we collected {swabs_collected} swabs at six university buildings, including two buildings where wastewater surveillance was currently ongoing. 
-Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with individual buildings ranging between {positivity_site_min}% and {positivity_site_max}%.
-*Comment on when spikes in cases, swabs, and waste-water occurred….* *Comment on prediction of cases using swabs, ww, or combined approach…*
-"
-  )
-
-rs_results <- rs_data |> 
-  glue::glue_data()
+swab_summary_location_traffic <- swabs_tidy |> 
+  mutate(traffic = if_else(
+    str_detect(location, 'Site 1'), 'high traffic', 'low traffic'
+  )) |> 
+  group_by(traffic) |> 
+  positivity_summary()
 
 
 
-```
+## Figure 1: data aggregation ----
 
-----
-
-## New
-
-### Abstract Results
-
-```{r results='asis'}
-cat(rs_abstract)
-```
-
----
-
-### Written Results
-
-```{r results='asis'}
-cat(rs_results)
-```
-
-----
-
-### Summary Table
-
-```{r}
-# stack summaries
-swab_summary |> 
-  mutate(site = 'Overall') |> 
-  bind_rows(swab_summary_sites) |> 
-  relocate(site) |> 
-  set_names(c('Site', 'N', 'PCR-Positive', '%')) |> 
-  kableExtra::kable(
-    format = 'pipe',
-    caption = 'Building Summary'
-  )
-```
-
----
-
-```{r}
 # uottawa cases - biweekly counts 
 cases_biweekly <- 
   cases |> 
@@ -341,24 +282,15 @@ cases_biweekly <-
   group_by(biweek) |> 
   summarise(cases = n(),
             cases_student = sum(role == 'Student'),
-            cases_staff = sum(role == 'Staff'),
+            cases_staff = sum(role == 'Employee'),
             ) |> 
-  right_join(biweekly_date_sequence() |>
-               filter(biweek < '2022-02-03') |> 
-               distinct(biweek),
-             by = 'biweek') |> 
-  mutate(across(where(is.integer), ~if_else(is.na(.), 0L, .))) |> 
-  view()
-
-
-```
-
-
-
-### Figure 1: Timeseries
-
-```{r}
-## Figure 1: data aggregation ----
+  right_join(
+    biweekly_date_sequence() |> 
+      filter(biweek < '2022-02-03') |> 
+      distinct(biweek),
+    by = 'biweek'
+  ) |> 
+  mutate(across(where(is.integer), ~if_else(is.na(.), 0L, .))) 
 
 # swabs biweekly summary
 swabs_biweekly <- 
@@ -427,31 +359,78 @@ wifi_biweekly <-
     max = max(clients)
   )
 
-## Plot Elements -----
 
-theme_color <- 'cornflowerblue'
-# layout x-axis
-scale_x_study_dates <- function(){
-    scale_x_date(
-      date_breaks = 'month',
-      date_labels = month.name[c(9:12, 1:5)] |> strtrim(3),
-      limits = c(
-        min(swabs_tidy$date_swab), 
-        max(swabs_tidy$date_swab)
-      ))
-}
-remove_x_labels <- function(){
-  theme(axis.ticks.x = element_blank(),
-        axis.text.x = element_blank())
-}
-remove_grid <- function(){
-  theme(panel.grid.minor = element_blank(),
-        plot.subtitle = element_markdown(size = 8, hjust = 0), 
-        plot.margin = unit(c(0.1, 1, 2, 0), unit = 'mm'))
-}
 
-## Figs -----
+# Map --------------------------------------------------------
 
+swab_coords <- tribble(
+  ~site, ~name, ~lat, ~lng,
+  'MRT', 'Morrisette Hall (MRT)', 45.423239101483546, -75.68428970961207,
+  'MNT', 'Montpetit', 45.42254171025894, -75.68265871464943,
+  '90U', '90 University', 45.42242555707402, -75.6850144991752,
+  'DMS', 'Desmarais Bldg.', 45.42387679340988, -75.68727075448753,
+  'TBT', 'Tabaret Hall', 45.42450940162542, -75.68631900184072,
+  'LPR',  'Louis Pasteur Bldg.', 45.421375668614466, -75.68026389993058,
+)
+
+ww_coords <- tribble(
+  ~site, ~name, ~lat, ~lng,
+  'aa', 'Annex Residence', 45.42678129026445, -75.68034405960745,
+  'fa', 'Faculty of Soc. Sci.', 45.421624722628515, -75.68390386012699,
+  'ft', 'Friel Residence', 45.43043440080566, -75.68290766533741,
+  'tbt', 'Tabaret Hall', 45.42450940162542, -75.68631900184072
+  # 'na', 'North sampling Site', NA, NA,
+  # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
+)
+
+figure_sites_map <- 
+  leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
+  leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
+  leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 14) |> 
+  leaflet::addCircleMarkers(~lng, ~lat, label =  ~name, popup = ~name, 
+                            radius = 2, color = '#440099') |> 
+  leaflet::addLabelOnlyMarkers(
+    ~lng, ~lat, label =  ~site, 
+    labelOptions = leaflet::labelOptions(
+      noHide = T, direction = 'top', textOnly = T, 
+    )) |> 
+  leaflet::addCircleMarkers(~lng, ~lat, label =  ~site, 
+                            radius = 2, color = '#440099') |> 
+  leaflet::addCircleMarkers(
+    data = ww_coords, ~lng, ~lat, label =  ~name, popup =  ~name, 
+    radius = 4, color = '#f96999')
+
+
+# Results ----------------------------------------------------
+
+rs_data <- lst(
+  swabs_collected = nrow(swabs_tidy),
+  positivity_ovr = swab_summary$positivity,
+  positivity_site_min = min(swab_summary_sites$positivity),
+  positivity_site_max = max(swab_summary_sites$positivity),
+)
+
+rs_abstract <- rs_data |> 
+  glue::glue_data(
+    "Over the 32-week study period, we collected {swabs_collected} swabs at six university buildings, including two buildings where wastewater surveillance was currently ongoing. 
+Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with individual buildings ranging between {positivity_site_min}% and {positivity_site_max}%.
+*Comment on when spikes in cases, swabs, and waste-water occurred….* *Comment on prediction of cases using swabs, ww, or combined approach…*
+"
+  )
+
+rs_results <- rs_data |> 
+  glue::glue_data()
+
+
+
+```
+</details>
+
+<details>
+<summary>Expand for plotting details</summary>
+
+```{r figures, echo=TRUE}
+# fig1 -----
 fig1_timeline <- 
   event_dates |> 
   ggplot(aes(x = start, xend = end, y = event, yend = event)) +
@@ -470,28 +449,40 @@ fig1_timeline <-
 
 
 fig1_cases <-
-  cases_biweekly |> 
-  select(biweek, cases_student, cases_staff) |> 
-  pivot_longer(-biweek) |> 
-  mutate(name = str_remove(name, 'cases_') |> str_to_title()) |> 
+  cases_biweekly |>
+  mutate(biweek = if_else(wday(biweek) == 5, biweek + 0.75, biweek - 0.75)) |>
+  select(biweek, cases_student, cases_staff) |>
+  pivot_longer(-biweek) |>
+  mutate(name = str_remove(name, 'cases_') |> str_to_title()) |>
   ggplot() +
-  geom_vline(data = tibble(x = as_date('2022-02-03')),
-             aes(xintercept = x),
-             lty = 2, color = 'gray') +
-  geom_text(data = tibble(x = as_date('2022-02-05'),
-                          y = 18,
-                          label = 'End of data'),
-            aes(x, y, label = label),
-            size = 3,
-            hjust = 0
+  geom_vline(
+    data = tibble(x = as_date('2022-02-03')),
+    aes(xintercept = x),
+    lty = 2,
+    color = 'gray'
   ) +
-  geom_col(aes(biweek, value, fill = name), 
-           size = 0.1,
-           width = 4, color = 'white') +
-  labs(x = NULL,
-       y = NULL,
-       fill = NULL,
-       subtitle = 'UOttawa COVID-19 Cases',
+  geom_text(
+    data = tibble(
+      x = as_date('2022-02-05'),
+      y = 18,
+      label = 'End of data'
+    ),
+    aes(x, y, label = label),
+    size = 2,
+    hjust = 0
+  ) +
+  geom_col(
+    aes(biweek, value, fill = name),
+    size = 0.15,
+    width = 3.5,
+    color = 'gray80',
+    position = position_stack()
+  ) +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = NULL,
+    subtitle = 'UOttawa COVID-19 Cases',
   ) +
   scale_fill_carto_d() +
   scale_x_study_dates() +
@@ -500,9 +491,9 @@ fig1_cases <-
   theme(
     axis.title.y = ggtext::element_markdown(lineheight = 1),
     legend.position = c(0.9, 0.4),
-    legend.key.size = unit(1, 'mm'),
-    legend.background = element_rect(color = 'grey')
-    ) 
+    legend.key.size = unit(2, 'mm'),
+    legend.background = element_rect(color = 'grey80')
+  )
 
 fig1_swabs <- 
   swabs_biweekly |> 
@@ -515,7 +506,7 @@ fig1_swabs <-
     method = 'loess',
     formula = 'y ~ x', 
     na.rm = T) +
-  geom_point(size = 1, color = theme_color, alpha = 0.85, shape = 1) +
+  geom_point(color = theme_color, alpha = 0.85, shape = 1, size = 1) +
   scale_x_study_dates() +
   labs(x = NULL, y = NULL,
        subtitle = 'Swab Positivity (%)') +
@@ -524,12 +515,7 @@ fig1_swabs <-
   
 fig1_co2 <-
   ggplot(swabs_biweekly, aes(biweek, co2_mean)) +
-  # geom_point(
-  #   data = swabs_biweekly |> unnest(co2_vals),
-  #   aes(y = co2_vals),
-  #   shape = 1, alpha = 0.4, size = 0.4
-  # ) +
-  geom_point(color = theme_color) +
+  geom_point(color = theme_color, shape = 1, alpha = 0.85, size = 1) +
   geom_smooth(fill = theme_color, alpha = 0.2, size = 0.5) +
   labs(x = NULL, y = NULL,
        subtitle = 'CO~2~ (ppm)') +
@@ -544,9 +530,7 @@ fig1_wifi <-
               size = 0.5,
               alpha = 0.2, 
               fill = theme_color) +
-  geom_point(
-    color = theme_color,
-    shape = 1, alpha = 1) +
+  geom_point(color = theme_color,  alpha = 0.85, shape = 1, size = 1) +
   labs(x = NULL, y = NULL,
        subtitle = "Wi-Fi Connections") +
   scale_x_study_dates() +
@@ -558,7 +542,7 @@ fig1_uo_ww <-
          aes(biweek, signal)) +
   geom_smooth(alpha = 0.2, size = 0.5, fill = theme_color, na.rm = T) +
   geom_point(aes(size = n),
-             color = theme_color, alpha = 0.5,
+             color = theme_color, alpha = 0.85,
              shape = 1,
              na.rm = T,
              show.legend = F) +
@@ -582,8 +566,7 @@ fig1_ott_ww <-
   geom_point(data = regional_ww_biweekly,
              aes(biweek, mean),
              na.rm = T,
-             shape = 1,
-             alpha = 0.5,
+             alpha = 0.85, shape = 1, size = 1,
              color = theme_color) +
   labs(x = 'Date',
        y = NULL,
@@ -593,7 +576,7 @@ fig1_ott_ww <-
   remove_grid() +
   theme(axis.title.y = ggtext::element_markdown(lineheight = 1)) 
 
-figure_1 <- wrap_plots(
+figure_1A <- wrap_plots(
     fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
     fig1_wifi, fig1_uo_ww, fig1_ott_ww
   ) & 
@@ -603,9 +586,63 @@ rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1
 
 ``` 
 
+</details>
+
+----
+
+## New
+
+### Abstract Results
+
+```{r abstract, results='asis'}
+cat(rs_abstract)
+```
+
+---
+
+### Written Results
+
+```{r written results, results='asis'}
+cat(rs_results)
+```
+
+----
+
+### Summary Tables
+
+```{r}
+# stack summaries
+swab_summary |> 
+  mutate(site = 'Overall') |> 
+  bind_rows(swab_summary_sites) |> 
+  relocate(site) |> 
+  set_names(c('Site', 'N', 'PCR-Positive', '%')) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Building Summary'
+  )
+```
+
+
+----
+
+```{r}
+swab_summary_location_traffic |> 
+  set_names(c('Traffic level', 'N', 'PCR-Positive', '%')) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Positivity by sample location traffic-level'
+  )
+```
+
+
+---
+
+
+### Figure 1: Timeseries
 
 ```{r fig.height=7, fig.width=5}
-figure_1
+(figure_1A)
 ```
 
 
@@ -618,16 +655,20 @@ figure_1
 corr_df <- swabs_biweekly |> 
   transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
   left_join(
-    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean)
+    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
+    by = 'biweek'
     ) |> 
   left_join(
     uottawa_ww_biweekly |> transmute(biweek, `University WW` = signal),
+    by = 'biweek'
   ) |> 
   left_join(
     regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
-  )
-left_join(
-    cases |> transmute(biweek, contains('cases')),
+    by = 'biweek'
+  ) |> 
+  left_join(
+    cases_biweekly |> transmute(biweek, Cases = cases),
+    by = 'biweek'
   )
 
 
@@ -636,31 +677,14 @@ corr_spearman <- corr_df |> corrr::correlate(method = 'spearman')
 corr_spearman |> 
   corrr::shave() |> 
   filter(term != `Swab PCR`) |>
-  select(-`Ottawa WW`) |> 
   kableExtra::kable(format = 'pipe', digits = 2)
 
-corr_spearman |> 
+figure_1B <- corr_spearman |> 
   corrr::autoplot() +
-  labs(title = 'Spearman Correlation Coefficients')
+  labs(subtitle = 'Spearman Correlation Coefficients')
   
+figure_1B
 ```
-
-
-#### Pearson Correlation
-
-```{r ts correlation pearson}
-corr_pearson <- corr_df |> corrr::correlate(method = 'pearson')
-
-corr_pearson |> 
-  corrr::shave() |> 
-  filter(term != `Swab PCR`) |> 
-  kableExtra::kable(format = 'pipe', digits = 3)
-
-corr_pearson |> 
-  corrr::autoplot() +
-  labs(title = 'Pearson Correlation Coefficients')
-```
-
 
 ----
 
@@ -671,6 +695,7 @@ Where are these collection sites?
 ```{r}
 figure_sites_map
 ```
+Pink markers represent waste-water collection sites; purple markers represent buildings where surface testing was performed. Only one building, Tabaret Hall, had both surface and waste-water testing. The locations of two waste-water sampling sites could not be ascertained and are not displayed on the map.
 
 **It remains unclear** which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to (not mapped).
 
@@ -690,425 +715,4 @@ uottawa_ww |>
 
 ```
 
-## Waste Water - Regional
 
-```{r fig.height=3.5, fig.width=5}
-regional_ww |> 
-  group_by(sample_date) |> 
-  summarise(mean = mean(mean)) |> 
-  ggplot() +
-  geom_rect(data = tibble(xmin = min(swabs$date_swab),
-                   xmax = max(swabs$date_swab),
-                   ymin = -Inf, 
-                   ymax = Inf),
-            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-            fill = 'grey90', color = 'gray',
-            size = 0.5,
-            lty = 2, alpha = 0.5) +
-  geom_text(aes(as_date('2022-01-01'), 0.0035, label = 'UOttawa study'),
-            color = 'darkgray') +
-  geom_point(aes(sample_date, mean), 
-             alpha = 0.76, size = 0.85, shape = 1) +
-  geom_smooth(aes(sample_date, mean), 
-              method = 'loess', formula = 'y ~ x',
-              span = 0.18, size = 0.75, alpha = 0.25,
-              fill = 'blue') +
-  scale_shape(solid = F) +
-  labs(x = 'Date',
-       y = 'Mean SARS-CoV-2 / PPMoV ',
-       color = 'PCR Target',
-       fill = 'PCR Target',
-       shape = 'PCR Target',
-       subtitle = 'Ottawa Waste-water: Combined N1 and N2 targets')
-```
-
-
-----
-
-<br>
-
-## Time-series comparison
-
-**2022-02-28 Update**: This data uses weekly aggregates, the new results use biweekly aggregates (in case you are wondering why the *r* values aren't the same).
-
-
-We probably want to summarise our swabs at the weekly (or biweekly?) level for comparison to the waste-water signal. This is what the weekly campus-wide time-series looks like compared with our weekly campus-wide swab positivity:
-
-
-```{r fig.width = 6, fig.height=6}
-ww_weekly_summary <- 
-  uottawa_ww |> 
-  mutate(week = get_date_week(sample_date)) |> 
-  left_join(week_midpoint_date_lookup('2021-01-01', '2022-12-31'),
-            by = 'week') |> 
-  select(date, signal, site) |> 
-  group_by(date) |> 
-  summarise(signal_mean = mean(signal),
-            signal_sd = sd(signal))
-
-plt_ww_weekly <- ww_weekly_summary |> 
-  ggplot(aes(date, 
-             signal_mean, 
-             # ymin = signal_mean - signal_sd,
-             # ymax = signal_sd + signal_sd
-             )) +
-  geom_line() +
-  geom_point() +
-  geom_point(data = uottawa_ww,
-             aes(as_date(sample_date), signal),
-             size = 1, shape = 1, alpha = 0.5) +
-  labs(x = 'Date', y = 'SARS-CoV-2 / PMMoV',
-       title = 'Weekly campus-wide average SARS-CoV-2 waste-water detection')
-
-swabs_weekly_summary <- swabs |> 
-  mutate(week = get_date_week(date_swab)) |> 
-  left_join(week_midpoint_date_lookup('2021-01-01', '2022-12-31'),
-            by = 'week') |> 
-  group_by(date) |> 
-  summarise(
-    x = sum(pcr_positive == 'Positive'),
-    n = n(),
-    positivity = list(binom_ci(x, n))
-    ) |> 
-  unnest_wider(positivity)
-
-plt_swabs_weekly <- swabs_weekly_summary |> 
-  ggplot(aes(x = date, y = point_est*100)) +
-  geom_line() +
-  geom_point() +
-  scale_x_date() +
-  scale_y_continuous(limits = c(0,100)) +
-  labs(x = 'Date', y = 'Swab positivity (%)',
-       title = 'Weekly campus-wide surface swab detection rate')
-
-wrap_plots(plt_swabs_weekly, plt_ww_weekly, ncol = 1)
-```
-
-If we look at the relationship between swabs and waste-water on weeks where both results are available, we see that they have a positive correlation.
-
-```{r fig.width = 5, fig.height=5}
-campus_ww_swab_summary <- 
-  swabs_weekly_summary |> 
-  select(date, point_est) |> 
-  left_join(ww_weekly_summary, by = 'date') |> 
-  transmute(date, ww = signal_mean, swabs = point_est*100)
-
-campus_ww_swab_summary |> 
-  ggplot(aes(swabs, ww, color = date)) +
-  geom_smooth(method = 'lm', color = 'gray', fill = 'gray') +
-  geom_point() +
-  scale_color_date() +
-  coord_fixed(ratio = 18000) +
-  labs(x = 'Swab positivity (%)', 
-       y = 'Waste-water signal',
-       color = "Sample\nWeek")
-```
-
-
-```{r}
-cortest_swab_ww <- 
-  lst(
-    pearson = cor.test(
-      campus_ww_swab_summary$ww,
-      campus_ww_swab_summary$swabs,
-      method = 'pearson'
-    ),
-    pearson_est = pearson$estimate |> round(2),
-    pearson_lower = pearson$conf.int[1] |> round(2),
-    pearson_upper = pearson$conf.int[2] |> round(2),
-    
-    spearman = cor.test(
-      campus_ww_swab_summary$ww,
-      campus_ww_swab_summary$swabs,
-      method = 'spearman'
-    ),
-    spearman_est = spearman$estimate |> round(3),
-    # spearman_lower = spearman$conf.int[1] |> round(2),
-    # spearman_upper = spearman$conf.int[2] |> round(2),
-    
-    kendall = cor.test(
-      campus_ww_swab_summary$ww,
-      campus_ww_swab_summary$swabs,
-      method = 'kendall'
-  ),
-    kendall_est = kendall$estimate |> round(2),
-    # kendall_lower = kendall$conf.int[1] |> round(2),
-    # kendall_upper = kendall$conf.int[2] |> round(2),
-    
-) |> 
-  suppressWarnings() |> 
-  glue_data(
-    "The Pearson's *r* (linear correlation) is {pearson_est} ({pearson_lower}-{pearson_upper}).
-    The Spearman's *r* (rank correlation) is {spearman_est}..
-    The Kendall's *Tau*  is {kendall_est}."
-  )
-
-```
-
-`r cortest_swab_ww`
-
-Pearson's *r* is more affected by outliers. Spearman's *r* or Kendall's *Tau* are probably the more reliable measures of correlation between these variables.
-
-<br>
-<br>
-
-(Data doesn't appear normally distributed, btw)
-
-```{r fig.height=3, fig.width=7.5}
-campus_ww_swab_summary |> 
-  pivot_longer(cols = c(ww, swabs)) |> 
-  ggplot(aes(value)) +
-  geom_histogram(bins = 15, color = 'lightgray') +
-  facet_wrap(~name, scales = 'free')
-```
-
-<br>
-<br>
-
-------------------------------------------------------------------------
-
-## 📊 Summary
-
-This plot shows the counts of positive (red) and negative (yellow) samples collected at each facility over time (x-axis). Samples that could not be tested are shown in navy. Only flocked swabs are shown. (Other sponge swabs were collected on 2022-04-28 were for comparing flocked and sponge swabs.)
-
-```{r university bargraph}
-plot_timeseries_summary(
-  swabs |> 
-    filter(
-      swab_type %in% 'flock',
-      !negative_control,
-      !is.na(negative_control)
-    ),
-  height_svg = 3.3,
-  width_svg = 8
-  )
-```
-
-
-------------------------------------------------------------------------
-
-## ⡯⡷ Dotplot
-
-This plot shows the counts of positive and negative samples collected at each facility over time. 
-
-```{r univeristy dotplot}
-plot_timeseries_locations(
-  swabs |> 
-    filter(swab_type == 'flock'),
-  height_svg = 6,
-  width_svg = 8
-  )
-```
-
-----------------------------------------------------------------------
-
-
-## Model {.tabset}
-
-This section contains results from modeling SARS-CoV-2 cases at UO using swab-PCR results as a predictor.
-
-<br>
-
-
-#### Specification
-
-We created a random intercepts logistic regression model with the occurrence of cases (binary) as outcome and swab results for the previous week (the proportion of positive swabs) as predictor. The model has a random intercept for each site.
-
-Our model formula is `cases ~ positives[lag 1 week] + (1|site)`.
-
-The model is fit as follows:
-
-```{r eval=FALSE, echo=TRUE}
-swab_model <-
-  blme::bglmer(
-    cases_binary ~ detection_lag_1week + (1 | site),
-    data =  uo_sites,
-    family = binomial
-  )
-```
-
-------------------------------------------------------------------------
-
-```{r model}
-swab_model <- read_rds(here('model/uo_swab_model.rds'))
-```
-
-<br>
-
-#### Model response time-series
-
-These plots show the swab results, cases, and predictions by the current model.\
-<br>
-
-```{r prediction figure live version, fig.height=15, fig.width=8}
-# uo cases data - long table
-cases_long <-
-  read_rds(here('./data/latest_uo_cases.rds')) |>
-  filter(!is.na(positive_result),
-         positive_result > lubridate::as_date('2021-09-14')) |>
-  select(case, role, confirmed_by_test, positive_result, c(`90U`:TBT)) |>
-  mutate(
-    `Campus Total` = TRUE,
-    # 3 days transmissibility
-    transmission_start = positive_result - days(3)
-    ) |>
-  pivot_longer(`90U`:`Campus Total`, names_to = 'site') |>
-  filter(value) |>
-  select(-value) |> 
-  mutate(site = fct_relevel(site, "Campus Total", after = 0L))
-
-uo_pred <- read_rds(here('model/uo_pred.rds'))
-
-# create a 3-panel fig for each of 6 buildings.
-map(
-  # site names for filtering 
-  .x = swabs$site |> unique() |> str_remove('UO_'),
-  .f = ~plot_uo_pred_swab_case(
-    swabs = swabs,
-    cases = cases_long,
-    preds = uo_pred,
-    site_select = .x
-  )
-) |> wrap_plots(guides = 'collect', ncol = 1)
-
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-#### Model summary
-
-These tables show the model coefficients and statistics.
-
-```{r model glance}
-broom.mixed::glance(swab_model) |> 
-  mutate_if(is.numeric, round, 2) |> 
-  kableExtra::kable(caption = 'Model statistics',
-                    format = "html") |> 
-  kableExtra::kable_styling(bootstrap_options = "striped", 
-                            full_width = F, position = "left")
-```
-
-------------------------------------------------------------------------
-
-```{r model tidy}
-broom.mixed::tidy(swab_model) |>
-  mutate(p.value = as.character(p.value)) |> 
-  mutate_if(is.numeric, round, 3) |> 
-  mutate(p.value = as.numeric(p.value)) |> 
-  kableExtra::kable(caption = 'Model parameters',     
-                    format = "html") |> 
-  kableExtra::kable_styling(bootstrap_options = "striped",
-                            full_width = F, position = "left")
-# tidy(swab_model, effects = 'ran_vals')
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-```{r plot model intercepts}
-sjPlot::tab_model(
-  swab_model,
-  show.re.var = TRUE,
-  pred.labels = c("(Intercept)", "Swabs @ t-1week"),
-  dv.labels = "Relation between UO cases (y/n) and proportion\n of positive swabs the previous week"
-)
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-#### Model response curves
-
-This plot shows the modelling data as points (detection lagged 1 week and cases at a given site- y/n), as well as how the probability of future cases varies by the previous weeks detection level and site, according to our model (curves).
-
-```{r response curves, fig.height=4.5}
-read_rds(here('fig/plt_model_resp_curves.rds')) +
-  labs(subtitle = 'Points show case/swab data and curves show model probability values')
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-#### Random Intercepts for Sites
-
-This plot shows the odds ratios for the intercepts of the model (an intercept for each site).
-
-```{r model_sites}
-# random effect plot: site intercepts; axes are flipped
-sjPlot::plot_model(swab_model, type = 're') +
-  theme_light() +
-  labs(title = "Random effects", y = 'Odds Ratio')
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-## EDA
-
-
-### Swabs and Cases
-
-This panel shows the cases counts at UO over the course of our sampling period. The case data shown represents the days on which a positive test was reported (black rug lines) and the presumed start of transmissiblity for each case (red lines).
-
-```{r cases and swabs, fig.height=6, fig.width=8, fig.align='center'}
-# generated from file R/plot_UO_case_load.R
-read_rds(here('fig/plt_cases_swabs.rds'))
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-### Swabs, Wifi, and CO~2~
-
-This panel shows linked data from swab results, CO~2~ readings, and wifi traffic (number of users \@ peak, daily) during our study period. Unfortunately, we do not have wifi data for 90U. <br>
-
-```{r uo multivariate panel, fig.width=12.5, fig.asp=0.6}
-uo_multivariate <- make_uo_panel(swabs, wifi)
-write_rds(uo_multivariate, here('fig/uo_multivariate.rds'))
-
-uo_multivariate & theme(text = element_text(size = 13))
-rm(uo_multivariate)
-```
-
-<br>
-
-------------------------------------------------------------------------
-
-### Wifi Traffic
-
-```{r wifi_ts, fig.height=6, fig.width=8}
-plot_UO_wifi_ts(wifi, swabs)
-```
-
-This panel shows a time-series of the daily peak number of wifi users at UO facilities. Sampling days are highlighted in blue.\
-<br>
-
-------
-
-### Cases: Imputation
-
-I fitted linear models to ascertain the relationship between the positive result date with the symptoms-began date, and/or the isolation-period-end date (3 combinations). I used the three linear models to impute missing result dates by averaging out the predictions of the three models (where data was available).
-Data are not missing at random: most of the missing values occur in Jan 2022 as testing became less common and more difficult to access (?). Collection of case records was abandoned by the university altogether in Feb 2022.
-
-```{r}
-# read_rds(here('fig/imputed_uo_case_dates.rds'))
-```
-
-
-
-<!-- ```{r echo=T} -->
-<!-- # ~1/4 of cases never tested, only reported symptoms & isolated   -->
-<!-- cases |> count(confirmed_by_test) -->
-
-<!-- # increasing to 40% not tested in early 2022 -->
-<!-- cases |> -->
-<!--   filter(positive_result > '2022-01-01') |>  -->
-<!--   count(confirmed_by_test) -->
-<!-- ``` -->
