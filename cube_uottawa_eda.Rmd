@@ -553,3 +553,21 @@ campus_ww_swab_summary |>
 
 <br>
 <br>
+
+-----
+
+## Waste Water - UO
+
+I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 near-campus sites (raw data below).
+
+```{r fig.width=6, fig.height=5}
+uottawa_ww |>
+  ggplot(aes(sample_date, signal)) +
+  geom_path(alpha = 0.6) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV') +
+  facet_wrap(~site, ncol = 2)
+
+```
+
+

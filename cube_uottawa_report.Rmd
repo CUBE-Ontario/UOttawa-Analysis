@@ -3,44 +3,30 @@ title: "CUBE - UOttawa"
 date: "`r Sys.Date()`"
 output: 
   html_document:
-    code_chunks: hide
+    code_folding: show
     toc: true
     toc_float: true
     theme: spacelab
+    highlight: kate
 ---
 
 ----
 
 ## TODO
 
-- [x]  Site summary data
-- [x]  Biweekly summary of variables
-  - [x]  Figures plus events timeline
-  - [x]  Correlation & Heatmap
-  - [x]  Add case counts / fix figure
+- <input type="checkbox" checked> Site summary data</input>
+- <input type="checkbox" checked> Biweekly summary of variables</input>
+  - <input type="checkbox" checked> Figures plus events timeline</input>
+  - <input type="checkbox" checked> Correlation & Heatmap</input>
+  - <input type="checkbox" checked> Add case counts / fix figure</input>
   
-- [x]  Case Date Imputation - rule-based guesses
- - +3d from symptoms
- - +2d from test
- - -7d from end of isolation 
+- <input type="checkbox" checked> Case Date Imputation. about that..</input>
 
-- [ ]  Model for cases ~ .
-- [ ]  Test high vs low traffic as FE in RE model
-- [ ]  Finish written methods and results
-- [ ] Garbage data in, garbage inferences out... recurring problem for every project
-
-
-## Case Data... *help*
-
-Multiple imputation (mice) has a key assumption that data is MAR. But data is not MAR (arguably), it's missing because of some dynamics not present in the data, like availability of testing or how much the author cared to record the data properly. Using mice means making the analysis much more complicated (painfully so)... 
-
-Instead I used a simpler ad-hoc method:
-  - if positive-test-result date is available, use that, else:
-    - use -5 days from end-of-isolation date, or if not available,
-    - use the test date as is, or if not available,
-    - use +3 days from symptoms-began date
-  
-It's not really the most sound approach, but the data is questionable to begin with since many cases were self-diagnosed (not tested) and the isolation period length makes no sense (where other dates are available) in the majority of cases after 2020.
+- <input type="checkbox" checked>  Model for cases ~ .</input>
+- <input type="checkbox" checked>  Test high vs low traffic as FE in RE model</input>
+- <input type="checkbox" unchecked>  Finalize fig. 2</input>
+- <input type="checkbox" unchecked>  Finalize fig. 3</input>
+- <input type="checkbox" unchecked>   Finish written methods and results</input>
 
 ----
 
@@ -48,7 +34,7 @@ It's not really the most sound approach, but the data is questionable to begin w
 <summary>Analysis code</summary>
 
 ```{r setup, echo=F}
-knitr::opts_chunk$set(echo = F, message = F, warning = F)
+knitr::opts_chunk$set(echo = T, message = F, warning = F, fig.align = 'center')
 ```
 
 ```{r data analysis, echo=TRUE}
@@ -57,7 +43,16 @@ library(tidyverse)
 library(here)
 library(ggiraph)
 library(patchwork)
-ggplot2::theme_set(theme_bw())
+library(ggtext)
+library(janitor)
+
+ggplot2::theme_set(theme_bw() + theme(
+  legend.text = element_markdown(family = 'IBM Plex Sans', colour = 'gray30'),
+  axis.text = element_markdown(family = 'IBM Plex Sans', colour = 'gray30'),
+  axis.title = element_markdown(family = 'IBM Plex Sans',colour = 'gray30'),
+))
+hrbrthemes::import_plex_sans()
+
 source(here('R/report_plots.R'))
 
 # Functions --------------------------------------------------
@@ -128,7 +123,8 @@ theme_color <- 'cornflowerblue'
 scale_x_study_dates <- function(){
     scale_x_date(
       date_breaks = 'month',
-      date_labels = month.name[c(9:12, 1:5)] |> strtrim(3),
+      date_labels = month.name[c(9:12, 1:5)] |> strtrim(3) |> 
+        paste0(' ', c(rep(2021, 4), rep(2022, 5))),
       limits = c(
         min(swabs_tidy$date_swab), 
         max(swabs_tidy$date_swab)
@@ -136,15 +132,26 @@ scale_x_study_dates <- function(){
 }
 # get rid of x-axis for vertically stacked plots
 remove_x_labels <- function(){
-  theme(axis.ticks.x = element_blank(),
-        axis.text.x = element_blank())
+  theme(
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
 }
-# no minor grid
+# no minor grid and adjust spacing for multipanel
 remove_grid <- function(){
-  theme(panel.grid.minor = element_blank(),
-        plot.subtitle = element_markdown(size = 8, hjust = 0), 
-        plot.margin = unit(c(0.1, 1, 2, 0), unit = 'mm'),
-        plot.title.position = 'panel')
+  theme(
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title.position = 'panel', 
+    plot.title = element_markdown(
+      vjust = -1, 
+      size = 8, 
+      face = 'bold', 
+      family = 'IBM Plex Sans',
+      colour = 'gray50',
+      margin = margin(0, 0, 0, 0)),
+    plot.margin = unit(c(0, 0, 0, 0), 'mm'))
 }
 
 
@@ -155,6 +162,14 @@ remove_grid <- function(){
 swabs <- 
   read_rds(here('data/cube.rds')) |> 
   filter(str_detect(site, '^UO_')) 
+
+# filtered swabs without controls or sponge samples
+swabs_tidy <- swabs |> 
+  filter(!negative_control, 
+         swab_type != 'sponge',
+         date_swab < '2022-04-27') |> 
+  select(date_swab, site, floor, location, pcr_positive, pcr_ct, co2) |> 
+  mutate(biweek = get_date_biweekly(date_swab))
 
 # lookup table for waste water site names
 lookup_ww <- tribble(
@@ -225,16 +240,10 @@ cases <-
   read_rds(here('data/cases_rule_imputed.rds')) |> 
   select(case, role, case_date, UC:TBT) |>
   mutate(biweek = get_date_biweekly(case_date)) |> 
-  nest(associated_sites = UC:TBT) |> 
-  print()
+  nest(associated_sites = UC:TBT)
 
 # Summaries --------------------------------------------------
 
-swabs_tidy <- swabs |> 
-  filter(!negative_control, swab_type != 'sponge') |> 
-  select(date_swab, site, floor, location, pcr_positive, pcr_ct,
-         co2) |> 
-  mutate(biweek = get_date_biweekly(date_swab))
 
 positivity_summary <- function(swabs){
   swabs |> 
@@ -338,27 +347,25 @@ wifi_extended <- read_rds(here('data/uo_wifi.rds')) |>
   mutate(biweek = get_date_biweekly(date))
 
 # overall wifi biweekly timeseries
-wifi_biweekly_sites <- 
+wifi_biweekly <- 
   wifi_extended |> 
   group_by(biweek) |> 
   summarise(
     n = n(),
-    min = min(clients),
-    mean = mean(clients),
-    max = max(clients)
+    min = min(clients, na.rm = T),
+    mean = mean(clients, na.rm = T),
+    max = max(clients, na.rm = T)
   )
 # per building wifi biweekly timeseries
-wifi_biweekly <- 
-  wifi_biweek_sites <- 
+wifi_biweek_sites <- 
   wifi_extended |> 
-  group_by(biweek) |> 
+  group_by(biweek, site) |> 
   summarise(
     n = n(),
     min = min(clients),
     mean = mean(clients),
     max = max(clients)
   )
-
 
 
 # Map --------------------------------------------------------
@@ -420,9 +427,6 @@ Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with indiv
 
 rs_results <- rs_data |> 
   glue::glue_data()
-
-
-
 ```
 </details>
 
@@ -434,22 +438,23 @@ rs_results <- rs_data |>
 fig1_timeline <- 
   event_dates |> 
   ggplot(aes(x = start, xend = end, y = event, yend = event)) +
-  geom_segment(linewidth = 5, lineend = 'round',
+  geom_segment(linewidth = 4, lineend = 'round',
                color = theme_color,
-               alpha = 0.35) +
+               alpha = 0.3) +
   geom_segment(linewidth = 1, lineend = 'butt',
              color = theme_color,
              alpha = 0.9) +
-  geom_point(aes(x = end), color = theme_color, size = 2) +
-  geom_point(color = theme_color, size = 2) +
+  geom_point(aes(x = end), color = theme_color, size = 1.6) +
+  geom_point(color = theme_color, size = 1.6) +
   scale_x_study_dates() +
-  labs(y = '', x = NULL, subtitle = 'Timeline') +
+  labs(title = 'Timeline') +
   remove_x_labels() +
   remove_grid()
 
 
 fig1_cases <-
   cases_biweekly |>
+  # adjust bar widths manually
   mutate(biweek = if_else(wday(biweek) == 5, biweek + 0.75, biweek - 0.75)) |>
   select(biweek, cases_student, cases_staff) |>
   pivot_longer(-biweek) |>
@@ -478,18 +483,12 @@ fig1_cases <-
     color = 'gray80',
     position = position_stack()
   ) +
-  labs(
-    x = NULL,
-    y = NULL,
-    fill = NULL,
-    subtitle = 'UOttawa COVID-19 Cases',
-  ) +
+  labs(fill = NULL, title = 'UOttawa COVID-19 Cases') +
   scale_fill_carto_d() +
   scale_x_study_dates() +
-  remove_grid() +
   remove_x_labels() +
+  remove_grid() +
   theme(
-    axis.title.y = ggtext::element_markdown(lineheight = 1),
     legend.position = c(0.9, 0.4),
     legend.key.size = unit(2, 'mm'),
     legend.background = element_rect(color = 'grey80')
@@ -499,7 +498,7 @@ fig1_swabs <-
   swabs_biweekly |> 
   ggplot(aes(biweek, positivity)) +
   geom_smooth(
-    size = 0.5,
+    linewidth = 0.5, 
     alpha = 0.2, 
     fill = theme_color, 
     span = 0.4,
@@ -508,8 +507,7 @@ fig1_swabs <-
     na.rm = T) +
   geom_point(color = theme_color, alpha = 0.85, shape = 1, size = 1) +
   scale_x_study_dates() +
-  labs(x = NULL, y = NULL,
-       subtitle = 'Swab Positivity (%)') +
+  labs(title = 'Swab Positivity (%)') +
   remove_x_labels() +
   remove_grid()
   
@@ -518,7 +516,7 @@ fig1_co2 <-
   geom_point(color = theme_color, shape = 1, alpha = 0.85, size = 1) +
   geom_smooth(fill = theme_color, alpha = 0.2, size = 0.5) +
   labs(x = NULL, y = NULL,
-       subtitle = 'CO~2~ (ppm)') +
+       title = 'CO~2~ (ppm)') +
   scale_x_study_dates() +
   remove_x_labels() +
   remove_grid()
@@ -531,8 +529,7 @@ fig1_wifi <-
               alpha = 0.2, 
               fill = theme_color) +
   geom_point(color = theme_color,  alpha = 0.85, shape = 1, size = 1) +
-  labs(x = NULL, y = NULL,
-       subtitle = "Wi-Fi Connections") +
+  labs(title = "Wi-Fi Connections") +
   scale_x_study_dates() +
   remove_x_labels() +
   remove_grid()
@@ -540,16 +537,15 @@ fig1_wifi <-
 fig1_uo_ww <-
   ggplot(uottawa_ww_biweekly,
          aes(biweek, signal)) +
-  geom_smooth(alpha = 0.2, size = 0.5, fill = theme_color, na.rm = T) +
-  geom_point(aes(size = n),
-             color = theme_color, alpha = 0.85,
-             shape = 1,
-             na.rm = T,
-             show.legend = F) +
+  geom_smooth(span = 0.4, alpha = 0.2, size = 0.5, fill = theme_color, na.rm = T) +
+  geom_point(
+    # aes(size = n),
+    alpha = 0.85, shape = 1, size = 1,
+    color = theme_color,
+    na.rm = T,
+    show.legend = F) +
   labs(
-    x = NULL, 
-    y = NULL,
-    subtitle = 'University Waste-Water',
+    title = 'University Waste-Water',
   ) +
   scale_x_study_dates() +
   scale_size(range = c(1, 3)) +
@@ -569,18 +565,18 @@ fig1_ott_ww <-
              alpha = 0.85, shape = 1, size = 1,
              color = theme_color) +
   labs(x = 'Date',
-       y = NULL,
-       subtitle = 'Regional Waste-Water',
+       title = 'Regional Waste-Water',
        ) +
   scale_x_study_dates() +
   remove_grid() +
-  theme(axis.title.y = ggtext::element_markdown(lineheight = 1)) 
+  theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
+        axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
 figure_1A <- wrap_plots(
     fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
     fig1_wifi, fig1_uo_ww, fig1_ott_ww
-  ) & 
-  plot_layout(ncol = 1, heights = c(1))
+  ) +
+  plot_layout(ncol = 1, nrow = 7, heights = c(1, rep(1.5, 6)))
 
 rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1_cases)
 
@@ -590,7 +586,7 @@ rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1
 
 ----
 
-## New
+## Results
 
 ### Abstract Results
 
@@ -624,34 +620,24 @@ swab_summary |>
 ```
 
 
-----
-
-```{r}
-swab_summary_location_traffic |> 
-  set_names(c('Traffic level', 'N', 'PCR-Positive', '%')) |> 
-  kableExtra::kable(
-    format = 'pipe',
-    caption = 'Positivity by sample location traffic-level'
-  )
-```
-
 
 ---
 
 
-### Figure 1: Timeseries
+### Figures
 
-```{r fig.height=7, fig.width=5}
-(figure_1A)
+```{r fig.height=6, fig.width=5.25, fig.align='left'}
+(figure_1A) 
 ```
 
+**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
 
-**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient C0~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV).
+----
 
+<br>
 
-#### Spearman Correlation
-
-```{r ts correlation}
+```{r ts correlation, fig.height=4, fig.width=4, fig.align='left'}
+# joined data for pairwise correlation 
 corr_df <- swabs_biweekly |> 
   transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
   left_join(
@@ -671,48 +657,462 @@ corr_df <- swabs_biweekly |>
     by = 'biweek'
   )
 
+corr_spearman <- corrr::correlate(
+  corr_df, method = 'spearman')
 
-corr_spearman <- corr_df |> corrr::correlate(method = 'spearman')
-
-corr_spearman |> 
-  corrr::shave() |> 
-  filter(term != `Swab PCR`) |>
-  kableExtra::kable(format = 'pipe', digits = 2)
-
-figure_1B <- corr_spearman |> 
-  corrr::autoplot() +
-  labs(subtitle = 'Spearman Correlation Coefficients')
+figure_1B <- corrr::autoplot(corr_spearman, triangular = "lower",
+                             barheight = 10) +
+  geom_text(aes(label = r |> round(2)), size = 3.5)
   
 figure_1B
 ```
 
+**Figure 2**: Spearman correlation between pairs of biweekly measures.
+
 ----
 
-### Map
+<br>
 
-Where are these collection sites?
-
-```{r}
+```{r fig.align='center'}
 figure_sites_map
 ```
-Pink markers represent waste-water collection sites; purple markers represent buildings where surface testing was performed. Only one building, Tabaret Hall, had both surface and waste-water testing. The locations of two waste-water sampling sites could not be ascertained and are not displayed on the map.
+
+**Map: Where are these collection sites?** Pink markers represent waste-water collection sites; purple markers represent buildings where surface testing was performed. Only one building, Tabaret Hall, had both surface and waste-water testing. The locations of two waste-water sampling sites could not be ascertained and are not displayed on the map.
 
 **It remains unclear** which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to (not mapped).
 
------
+----
 
-## Waste Water - UO
+<br>
 
-I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 near-campus sites (raw data below).
+## Models
 
-```{r fig.width=6, fig.height=5}
-uottawa_ww |>
-  ggplot(aes(sample_date, signal)) +
-  geom_path(alpha = 0.6) +
-  geom_point(alpha = 0.5, size = 0.5) +
-  labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV') +
-  facet_wrap(~site, ncol = 2)
+- **Hypothesis testing**. *H~A~*: swab-PCR positivity, CO~2~, wifi, and WW signals are  predictive of number of cases. *H~0~*: no relationship.
+- **Method**: Backwards selection of significant predictors, ANOVA  
+- **Formula**: `cases ~ swab_pcr + co2 + wifi + {university_ww} + regional_ww + (all interactions...)`. 
+- **Issue**: only 10 / 50 biweekly obs are complete cases
+   - `cases` counted only until Feb 2022 (~40% miss).  
+   - `university_ww` from Dec 2021 (~40% miss).  
+   - `wifi` occasional missing data. 
+- **Question**: do we want standardized effects or simple effects? (I standardized because we are mostly interested in comparing different predictors within a model, as opposed to across different data sets.) 
+- **Question**: do we want to consider interactions?  (I did and didn't)
+   
+<br>
+
+```{r fig.height=5, fig.width=5, fig.align='center'}
+# n=50 biweekly obs; uni_ww missing first half of period...
+df_mod <- corr_df |> 
+  janitor::clean_names() |> 
+  mutate(across(-c(cases, biweek), scale)) # rescale
+
+# only 10 complete observations, oof
+df_mod_complete_obs <- df_mod |> na.omit()
+
+# missing data
+naniar::vis_miss(df_mod) +
+  labs(subtitle = 'Aggregated TS Missingness')
+```
+
+<br>
+
+----
+
+#### Case count distribution
+
+**Cases counts** seem to follow a negative binomial distribution more than Poisson.
+
+```{r fig.height=5, fig.width=5}
+# simulated curves
+add_poisson_density_curve <- function(p) {
+  p + geom_density(
+    data = tibble(
+      x = rpois(n = sum(!is.na(df_mod$cases)),
+                lambda = mean(df_mod$cases, na.rm = T))
+      ), 
+    aes(x), color = 'blue', alpha = 0.25, size = 0.03
+  )
+}
+add_nb_density_curve <- function(p) {
+  p +     
+    geom_density(
+      data = tibble(x = rnbinom(
+        size = 1,
+        n = sum(!is.na(df_mod$cases)),
+        mu = mean(df_mod$cases, na.rm = T),
+      )), 
+      aes(x), color = 'blue', alpha = 0.25, size = 0.03
+    )
+}
+simulation_plot <- function(plt_fn, title){
+  p <- df_mod |> ggplot()
+  walk(seq(100), ~ {p <<- plt_fn(p)})
+  p + geom_density(aes(cases)) + labs(x = 'Cases', subtitle = title)
+}
+
+# Poisson dist
+p1 <- simulation_plot(
+  add_poisson_density_curve,
+  'Cases vs. Simulated poisson distribution'
+  )
+
+# NB dist
+p2 <- simulation_plot(
+  add_nb_density_curve,
+  'Cases vs. Simulated negative binomial distribution'
+  )
+
+(p1 / p2)
+
+rm(p1, p2, add_poisson_density_curve, add_nb_density_curve)
+```
+
+<br>
+
+----
+
+### Poisson Regression, Backwards Selection
+
+<br>
+
+#### Poisson Model with all interactions
+
+Backwards selection arrived at the model with `swab_pcr`, `wifi`, `ottawa_ww`, and the interaction between `ottawa_ww` & `swab_pcr`.  
+
+```{r}
+# 30 complete obs if excluding univeristy ww entirely
+df_mod_no_uniww <- df_mod |> select(-university_ww) |> na.omit()
+
+# backwards select with n=30, no university ww
+full_model <- glm(
+  cases ~ . ^ 2,
+  data = df_mod_no_uniww |> select(-biweek), 
+  family = 'poisson')
+
+# do backwards selection
+backwards_selected <- step(full_model, trace = F)
+stopifnot(backwards_selected$converged)
+
+# standardized coefs and 95% CI
+broom::tidy(backwards_selected, conf.int = T, conf.level = 0.95) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = "Poisson model with interactions: Coefficients & 95% CI"
+    )
+
+# use type III SS tests since swab*ww interaction is significant
+car::Anova(backwards_selected, type = 3) |> 
+  rownames_to_column(var = 'Term') |> 
+  as_tibble() |> 
+    kableExtra::kable(
+    format = 'pipe',
+    caption = "Type III ANOVA"
+    )
+
+# test model assumption of equidispersion
+# p > 0.05 means no significant overdispersion
+AER::dispersiontest(backwards_selected)
+```
+
+<details>
+<summary>***Backward selection model summary and diagnostics***</summary>
+```{r}
+summary(backwards_selected)
+plot(backwards_selected)
+hist(backwards_selected$residuals)
+
+rm(full_model)
+```
+</details>
+
+<br>
+
+----
+
+#### Poisson Main Effects Only
+
+Poisson model chosen by backwards selection with no interactions identifies swab positivity and Ottawa WW signal as significant predictors.
+
+```{r}
+# backwards select with n=30, no university ww
+me_model <- glm(
+  cases ~ swab_pcr + co2 + wi_fi + ottawa_ww,
+  data = df_mod_no_uniww, 
+  family = 'poisson')
+
+backwards_selected_me <- step(me_model, trace = F)
+stopifnot(backwards_selected_me$converged)
+
+# nearly significant overdispersion when only main effects included
+AER::dispersiontest(backwards_selected_me)
+
+# regression coefs and 95%CI
+broom::tidy(backwards_selected_me, conf.int = T, conf.level = 0.95) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = "Main Effects Only: Coefficients & 95% CI"
+    )
+
+# type II SS test
+car::Anova(backwards_selected_me, type = 2) |> 
+  rownames_to_column(var = 'Term') |> 
+  as_tibble() |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = "Type II ANOVA"
+  )
 
 ```
 
+<details>
+<summary>***Backward selection model summary and diagnostics***</summary>
+```{r}
+summary(backwards_selected_me)
+plot(backwards_selected_me)
+hist(backwards_selected_me$residuals)
+rm(me_model)
+```
+</details>
+
+
+<br>
+
+----
+
+### NB model, backwards selection
+
+NB model with main effects also identifies `cases ~ swab + ottawa_ww` as optimal model (as with Poisson model). NB fit didn't converge when all interactions are included in the model.
+
+<br>
+
+#### Main effects, no interactions
+
+```{r}
+# negative binomial regression; main effects only
+full_model_nb <- MASS::glm.nb(
+  cases ~ ., 
+  data = df_mod_no_uniww |> select(-biweek),
+  control = glm.control(maxit = 5000)
+  )
+
+backwards_selected_nb <- step(full_model_nb, trace = F)
+stopifnot(backwards_selected_nb$converged)
+
+broom::tidy(backwards_selected_nb, conf.int = T, conf.level = 0.95) |> 
+  rownames_to_column(var = 'Term') |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = "NB model -no interactions: Coefficients & 95% CI"
+    )
+```
+
+<details>
+  <summary>***Model summary and diagnostics***</summary>
+```{r}
+# not the worst fit, could be much better
+summary(backwards_selected_nb)
+plot(backwards_selected_nb)
+hist(backwards_selected_nb$residuals)
+rm(full_model_nb)
+```
+
+</details>
+
+
+The negative binomial model (with extra parameter $\theta$) does not significantly improve the log likelihood compared to the poisson model (p > 0.05).
+```{r}
+library(lmtest)
+# poisson vs. nb models with main effects only
+lmtest::lrtest(backwards_selected_me, backwards_selected_nb)
+```
+
+
+
+<details>
+  <summary>**NB fit fails with interactions**</summary>
+
+```{r echo=T}
+# swab pcr and 
+full_model_nb_int <- MASS::glm.nb(
+  cases ~ .*., 
+  data = df_mod_no_uniww |> select(-biweek) |> na.omit(),
+  control = glm.control(maxit = 15000)
+  )
+# do selection
+try((backwards_selected_nb_int <- step(full_model_nb_int)))
+rm(full_model_nb_int)
+
+```
+</details>
+
+<br>
+
+----
+
+## Model with university WW
+
+If we consider the ten biweekly observations where we have linked cases, swabs, and university WW data,
+
+```{r}
+# backwards select with university ww (n=10 biweekly obs)
+full_model_w_uni_ww <- glm(
+  cases ~ .,
+  data = df_mod_complete_obs |> select(-biweek), 
+  family = 'poisson')
+
+# do backwards selection
+backwards_selected_ww <- step(full_model_w_uni_ww, trace = F)
+stopifnot(backwards_selected_ww$converged)
+
+
+# standardized coefs and 95% CI
+broom::tidy(backwards_selected_ww, conf.int = T, conf.level = 0.95) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = "Poisson model with interactions: Coefficients & 95% CI"
+    )
+
+# use type II SS test
+car::Anova(backwards_selected_ww, type = 2) |> 
+  rownames_to_column(var = 'Term') |> 
+  as_tibble() |> 
+    kableExtra::kable(
+    format = 'pipe',
+    caption = "Type II ANOVA"
+    )
+
+# test model assumption of equidispersion
+# p > 0.05 means no significant overdispersion
+AER::dispersiontest(backwards_selected_ww)
+```
+
+
+<details>
+  <summary>***Model summary and diagnostics***</summary>
+```{r}
+summary(backwards_selected_ww)
+plot(backwards_selected_ww)
+hist(backwards_selected_ww$residuals)
+rm(full_model_w_uni_ww)
+```
+
+</details>
+
+
+
+
+----
+
+
+## GLMM: High v Low Traffic
+
+```{r}
+swab_summary_location_traffic |> 
+  set_names(c('Traffic level', 'N', 'PCR-Positive', '%')) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Positivity by sample location traffic-level'
+  )
+```
+
+
+To evaluate whether high traffic locations are different from low traffic sites, in terms of swab-PCR positivity, we fit a mixed model with random intercepts for different sites. There appears to be little difference (15% vs 12% overall) and this is confirmed by our mixed model with traffic level as a fixed effect (OR 0.71; 95% CI 0.82-2.2). 
+
+
+```{r}
+traffic_swabs <- 
+  swabs_tidy |> 
+  mutate(
+    traffic = if_else(
+      str_detect(location, 'Site 1'), 'high', 'low') |> 
+      factor(levels = c('low', 'high'))
+    ) |> 
+  select(site, traffic, pcr_positive)
+
+mixed_model <- 
+  lme4::glmer(pcr_positive ~ traffic + (1 | site), data = traffic_swabs,
+            family = 'binomial')
+
+broom.mixed::tidy(mixed_model, conf.int = T, exponentiate = T) |> 
+  kableExtra::kable(format = 'pipe',
+                    caption = 'Traffic level - Random intercepts model')
+
+```
+
+
+-----
+
+## Case Data Imputation... 
+
+Multiple imputation (mice) has a key assumption that data is MAR. But data is arguably not MAR, but because of some dynamics not present in the data. 
+
+Using mice means making the analysis much more complicated... Generally, you need to model each imputed dataset and then analyze the pooled results. That gets a lot more complicated when needing to first aggregate the data, join to a bunch of other data, do various modelling tasks.... all nested within each iteration.
+
+Instead, I used a simpler ad-hoc method:  
+
+  - if positive-test-result date is available, use that, else:  
+  - use -5 days from end-of-isolation date, or if not available,  
+  - use the test date as is, or if not available,  
+  - use +3 days from symptoms-began date  
+  
+It's not really the most sound approach, but the data is questionable to begin with since many cases were self-diagnosed (not tested) and the isolation period length makes no sense (where other dates are available) in the majority of cases after 2020.
+
+----
+
+
+
+```{r fig.height=4, fig.width=8}
+convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23)
+
+plt_swabs <- 
+  swabs_tidy |> 
+  mutate(
+    site = str_remove(site, 'UO_'),
+    traffic = if_else(str_detect(location, 'Site 1'), 'High', 'Low'),
+    location = str_glue('{site}: {traffic}'),
+    copies = convert_cq_to_copies(pcr_ct),
+    copies_plus_one = if_else(is.na(copies), 1, copies + 1),
+    shape = if_else(pcr_positive == 'Positive', 15, 0),
+    alpha = if_else(pcr_positive == 'Positive', 1, 0.5),
+    size = if_else(pcr_positive == 'Positive', 1.5, 1),
+    )
+
+plt_cases <- 
+  cases |> 
+  unnest(associated_sites) |> 
+  pivot_longer(UC:TBT, names_to = 'site') |> 
+  mutate(site = if_else(site == 'UC', '90U', site)) |> 
+  filter(value, 
+         case_date > min(plt_swabs$date_swab - 5),
+         case_date < max(plt_swabs$date_swab + 5),
+         ) |> 
+  select(-value, -biweek, -case)
+
+plt_swabs |> 
+  ggplot() +
+  geom_rug(data = plt_cases, 
+           aes(case_date), 
+           alpha  = 0.2,
+           linewidth = 0.5,
+           length = unit(5, 'cm')) +
+  geom_point(aes(date_swab, location, 
+             color = copies_plus_one,
+             shape = shape,
+             size = size
+             )) +
+  scale_shape_identity() +
+  scale_alpha_identity() + 
+  scale_size_identity() + 
+  scale_color_viridis_c(option = 'C',  trans = "log10") +
+  scale_x_study_dates() +
+  facet_wrap(~site, ncol = 1, scales = 'free_y') +
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  ) +
+  labs(x = NULL, y = 'Traffic level', color = "Copies + 1")
+
+rm(plt_cases, plt_swabs)
+```
 
