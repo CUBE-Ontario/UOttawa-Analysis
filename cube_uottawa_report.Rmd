@@ -131,7 +131,7 @@ scale_x_study_dates <- function(){
       ))
 }
 # get rid of x-axis for vertically stacked plots
-remove_x_labels <- function(){
+theme_no_x_labels <- function(){
   theme(
     axis.ticks.x = element_blank(),
     axis.title.x = element_blank(),
@@ -139,7 +139,7 @@ remove_x_labels <- function(){
   )
 }
 # no minor grid and adjust spacing for multipanel
-remove_grid <- function(){
+theme_remove_grid <- function(){
   theme(
     axis.title.y = element_blank(),
     panel.grid.minor = element_blank(),
@@ -448,8 +448,8 @@ fig1_timeline <-
   geom_point(color = theme_color, size = 1.6) +
   scale_x_study_dates() +
   labs(title = 'Timeline') +
-  remove_x_labels() +
-  remove_grid()
+  theme_no_x_labels() +
+  theme_remove_grid()
 
 
 fig1_cases <-
@@ -486,8 +486,8 @@ fig1_cases <-
   labs(fill = NULL, title = 'UOttawa COVID-19 Cases') +
   scale_fill_carto_d() +
   scale_x_study_dates() +
-  remove_x_labels() +
-  remove_grid() +
+  theme_no_x_labels() +
+  theme_remove_grid() +
   theme(
     legend.position = c(0.9, 0.4),
     legend.key.size = unit(2, 'mm'),
@@ -508,8 +508,8 @@ fig1_swabs <-
   geom_point(color = theme_color, alpha = 0.85, shape = 1, size = 1) +
   scale_x_study_dates() +
   labs(title = 'Swab Positivity (%)') +
-  remove_x_labels() +
-  remove_grid()
+  theme_no_x_labels() +
+  theme_remove_grid()
   
 fig1_co2 <-
   ggplot(swabs_biweekly, aes(biweek, co2_mean)) +
@@ -518,8 +518,8 @@ fig1_co2 <-
   labs(x = NULL, y = NULL,
        title = 'CO~2~ (ppm)') +
   scale_x_study_dates() +
-  remove_x_labels() +
-  remove_grid()
+  theme_no_x_labels() +
+  theme_remove_grid()
   
 fig1_wifi <-
   wifi_biweekly |> 
@@ -531,8 +531,8 @@ fig1_wifi <-
   geom_point(color = theme_color,  alpha = 0.85, shape = 1, size = 1) +
   labs(title = "Wi-Fi Connections") +
   scale_x_study_dates() +
-  remove_x_labels() +
-  remove_grid()
+  theme_no_x_labels() +
+  theme_remove_grid()
 
 fig1_uo_ww <-
   ggplot(uottawa_ww_biweekly,
@@ -549,8 +549,8 @@ fig1_uo_ww <-
   ) +
   scale_x_study_dates() +
   scale_size(range = c(1, 3)) +
-  remove_x_labels() +
-  remove_grid()
+  theme_no_x_labels() +
+  theme_remove_grid()
 
 fig1_ott_ww <- 
   ggplot(regional_ww_daily) + 
@@ -568,7 +568,7 @@ fig1_ott_ww <-
        title = 'Regional Waste-Water',
        ) +
   scale_x_study_dates() +
-  remove_grid() +
+  theme_remove_grid() +
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
         axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
@@ -1105,14 +1105,50 @@ plt_swabs |>
   scale_color_viridis_c(option = 'C',  trans = "log10") +
   scale_x_study_dates() +
   facet_wrap(~site, ncol = 1, scales = 'free_y') +
+  labs(x = NULL, 
+       y = 'Building: Traffic level', 
+       color = "Copies + 1") +
   theme_bw() +
   theme(
     panel.grid = element_blank(),
     strip.background = element_blank(),
     strip.text.x = element_blank()
-  ) +
-  labs(x = NULL, y = 'Traffic level', color = "Copies + 1")
+  )
 
-rm(plt_cases, plt_swabs)
+```
+
+
+
+```{r}
+plt_co2 <- 
+  plt_swabs |> 
+  select(date_swab, site, traffic, co2) |> 
+  arrange(date_swab) |> 
+  glimpse()
+
+plt_co2_early <- plt_co2 |> filter(date_swab < '2022-01-01')
+plt_co2_late <- plt_co2 |> filter(date_swab > '2022-01-01')
+
+
+ggplot(
+  data = plt_co2_early,
+  aes(date_swab, co2, 
+      color = traffic,
+      group = traffic)
+) +
+  geom_line(data = plt_co2_early) +
+  geom_line(data = plt_co2_late) +
+  geom_point(data = plt_co2_early, size = 0.5) +
+  geom_point(data = plt_co2_late, size = 0.5) +
+  
+  facet_wrap(~site, ncol = 1) +
+  scale_x_study_dates() +
+  theme_remove_grid() + 
+  theme(axis.title.y = element_markdown()) +
+  labs(x = NULL, y = "CO~2~", color = "Traffic level")
+  
+
+plt_co2
+# rm(plt_cases, plt_swabs)
 ```
 

@@ -350,7 +350,7 @@ This panel shows linked data from swab results, CO~2~ readings, and wifi traffic
 
 ```{r uo multivariate panel, fig.width=12.5, fig.asp=0.6}
 
-
+set.seed(1234)
 uo_multivariate <- make_uo_panel(swabs, wifi)
 write_rds(uo_multivariate, here('fig/uo_multivariate.rds'))
 
