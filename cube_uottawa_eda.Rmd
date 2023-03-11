@@ -285,7 +285,7 @@ broom.mixed::tidy(swab_model) |>
 
 <br>
 
-------------------------------------------------------------------------
+---------------------------------------------------------------
 
 ```{r plot model intercepts}
 sjPlot::tab_model(
@@ -298,7 +298,7 @@ sjPlot::tab_model(
 
 <br>
 
-------------------------------------------------------------------------
+---------------------------------------------------------------
 
 #### Model response curves
 
@@ -481,13 +481,13 @@ campus_ww_swab_summary <-
   swabs_weekly_summary |>
   select(date, point_est) |>
   left_join(ww_weekly_summary, by = 'date') |>
-  transmute(date, ww = signal_mean, swabs = point_est*100)
+  transmute(date, ww = signal_mean, swabs = point_est*100) |> 
+  filter(!is.na(ww))
 
 campus_ww_swab_summary |>
-  ggplot(aes(swabs, ww, color = date)) +
-  geom_smooth(method = 'lm', color = 'gray', fill = 'gray') +
+  ggplot(aes(swabs, ww)) +
+  geom_smooth(method = 'lm', formula = 'y ~ x') +
   geom_point() +
-  scale_color_date() +
   coord_fixed(ratio = 18000) +
   labs(x = 'Swab positivity (%)',
        y = 'Waste-water signal',
