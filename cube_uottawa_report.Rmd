@@ -582,7 +582,7 @@ fig1_ott_ww <-
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
         axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
-figure_1A <- wrap_plots(
+figure_1 <- wrap_plots(
     fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
     fig1_wifi, fig1_uo_ww, fig1_ott_ww
   ) +
@@ -637,7 +637,7 @@ swab_summary |>
 ### Figures
 
 ```{r fig.height=6, fig.width=5.25, fig.align='left'}
-(figure_1A) 
+(figure_1) 
 ```
 
 **Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
@@ -670,11 +670,11 @@ corr_df <- swabs_biweekly |>
 corr_spearman <- corrr::correlate(
   corr_df, method = 'spearman')
 
-figure_1B <- corrr::autoplot(corr_spearman, triangular = "lower",
+figure_2 <- corrr::autoplot(corr_spearman, triangular = "lower",
                              barheight = 10) +
   geom_text(aes(label = r |> round(2)), size = 3.5)
   
-figure_1B
+figure_2
 ```
 
 **Figure 2**: Spearman correlation between pairs of biweekly measures.
@@ -1073,7 +1073,7 @@ It's not really the most sound approach, but the data is questionable to begin w
 <!-- ```{r fig.height=4, fig.width=8} -->
 <!-- convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23) -->
 
-<!-- fig2_swabs_df <-  -->
+<!-- fig3_swabs_df <-  -->
 <!--   swabs_tidy |>  -->
 <!--   mutate( -->
 <!--     site = str_remove(site, 'UO_'), -->
@@ -1088,7 +1088,7 @@ It's not really the most sound approach, but the data is questionable to begin w
 
 
 
-<!-- fig2_swabs_df |>  -->
+<!-- fig3_swabs_df |>  -->
 <!--   ggplot() + -->
 <!--   geom_rug(data = plt_cases,  -->
 <!--            aes(case_date),  -->
@@ -1157,7 +1157,7 @@ It's not really the most sound approach, but the data is questionable to begin w
 
 ---------------------------------------------------------------
 
-## Figure 2. (like Fig1 but disaggregated)
+## Figure 3. (like Fig1 but disaggregated)
 
 ```{r fig.width=10, fig.height=8}
 ## thematic elements and axis scales -----
@@ -1208,7 +1208,7 @@ plot_site_cases <- function(data, site){
       labels = c('Employee', 'Student'),
       drop = FALSE,
       name = 'Role') +
-    labs(fill = 'Role', y = 'Cases', x = NULL) +
+    labs(fill = 'Role', y = 'Cases', x = NULL, title = site) +
     theme_no_x_labels() +
     theme_axes_lb() +
     theme(axis.title.y = element_markdown()) 
@@ -1229,7 +1229,7 @@ plot_site_swabs <- function(data, site){
     scale_x_study_dates() +
     scale_y_copies() +
     scale_color_traffic() +
-    labs(x = NULL, y = 'Copies + 1', color = 'Location Traffic level') +
+    labs(x = NULL, y = 'Copies + 1', color = 'Traffic Level') +
     theme_no_x_labels() +
     theme_axes_lb() +
     theme(axis.title.y = element_markdown(),
@@ -1276,7 +1276,7 @@ plot_site_wifi <- function(data, site){
 }
 
 ## Plot datasets ====
-fig2_cases <- 
+fig3_cases <- 
   cases |> 
   unnest(associated_sites) |> 
   pivot_longer(UC:TBT, names_to = 'site') |> 
@@ -1291,7 +1291,7 @@ fig2_cases <-
             .groups = 'drop') |>
   group_nest(site, .key = "cases")
 
-fig2_swabs <- 
+fig3_swabs <- 
   swabs_tidy |> 
   mutate(
     site = str_remove(site, 'UO_'),
@@ -1303,13 +1303,13 @@ fig2_swabs <-
   select(site, traffic, date_swab, copies_plus_one) |>
   group_nest(site, .key = "swabs")
 
-fig2_wifi <- 
+fig3_wifi <- 
   wifi |> 
   mutate(site = str_remove(site, 'UO_')) |> 
   select(date, site, clients) |>
   group_nest(site, .key = "wifi")
 
-fig2_co2 <- 
+fig3_co2 <- 
    swabs_tidy |> 
   transmute(
     site = str_remove(site, 'UO_'),
@@ -1321,13 +1321,13 @@ fig2_co2 <-
   print()
 
 # combine nested df
-fig2_df_nest <- fig2_cases |> 
-  left_join(fig2_swabs, by = join_by(site)) |> 
-  left_join(fig2_wifi, by = join_by(site)) |> 
-  left_join(fig2_co2, by = join_by(site))
+fig3_df_nest <- fig3_cases |> 
+  left_join(fig3_swabs, by = join_by(site)) |> 
+  left_join(fig3_wifi, by = join_by(site)) |> 
+  left_join(fig3_co2, by = join_by(site))
 
 ## map data to plots, combine into panel for each site ====
-fig2_plts <- fig2_df_nest |>
+fig3_plts <- fig3_df_nest |>
   arrange(site == '90U') |> 
   transmute(
     site,
@@ -1342,8 +1342,7 @@ fig2_plts <- fig2_df_nest |>
       p <- 
         patchwork::wrap_plots(
           plt_cases, plt_swabs, plt_co2, plt_wifi, ncol = 1
-        ) + 
-        patchwork::plot_annotation(subtitle = site)
+        ) 
       
       if (site %in% c('90U', 'MNT')) return(p)
       p + patchwork::plot_annotation(theme = theme(
@@ -1354,20 +1353,27 @@ fig2_plts <- fig2_df_nest |>
 
 ## Combine all 6 sites into 2*3 panel
 (
-  figure2 <- 
+  figure_3 <- 
     patchwork::wrap_plots(
-      fig2_plts$panel, 
-      tag_level = 'new',
+      fig3_plts$panel, 
+      tag_level = 'keep',
       guides = 'collect'
-    ) 
+    )
 )
 ```
 
-```{r}
-figure_1A
-ggsave('fig/figure_1.png', device = 'png', width = 7, height = 7)
 
-figure_1A
-ggsave('fig/test.pdf', device = 'pdf', width = 7, height = 7)
+Figure 3?
+
+
+```{r}
+## save figures ----
+# doesn't work as a pdf for some reason
+ggsave('fig/figure_1.png', figure_1, device = 'png', width = 7, height = 7) 
+ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', height = 4, width = 4)
+ggsave('fig/figure_2.png', figure_2, device = 'png', height = 4, width = 4)
+ggsave('fig/figure_3.pdf', figure_3, device = 'pdf', height = 8, width = 12)
+ggsave('fig/figure_3.png', figure_3, device = 'png', height = 8, width = 12)
+# ggsave()
 ```
 
