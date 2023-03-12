@@ -57,6 +57,8 @@ source(here('R/report_plots.R'))
 
 # Functions --------------------------------------------------
 
+convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23)
+
 # creates yyyy-ww label for grouping data
 get_date_week <- function(x){
   y <- lubridate::year(x)
@@ -136,6 +138,14 @@ theme_no_x_labels <- function(){
     axis.ticks.x = element_blank(),
     axis.title.x = element_blank(),
     axis.text.x = element_blank()
+  )
+}
+# get rid of y-axis for horizontally stacked plots
+theme_no_y_labels <- function(){
+  theme(
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank()
   )
 }
 # no minor grid and adjust spacing for multipanel
@@ -1060,95 +1070,295 @@ It's not really the most sound approach, but the data is questionable to begin w
 
 
 
-```{r fig.height=4, fig.width=8}
-convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23)
+<!-- ```{r fig.height=4, fig.width=8} -->
+<!-- convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23) -->
 
-plt_swabs <- 
-  swabs_tidy |> 
-  mutate(
-    site = str_remove(site, 'UO_'),
-    traffic = if_else(str_detect(location, 'Site 1'), 'High', 'Low'),
-    location = str_glue('{site}: {traffic}'),
-    copies = convert_cq_to_copies(pcr_ct),
-    copies_plus_one = if_else(is.na(copies), 1, copies + 1),
-    shape = if_else(pcr_positive == 'Positive', 15, 0),
-    alpha = if_else(pcr_positive == 'Positive', 1, 0.5),
-    size = if_else(pcr_positive == 'Positive', 1.5, 1),
-    )
+<!-- fig2_swabs_df <-  -->
+<!--   swabs_tidy |>  -->
+<!--   mutate( -->
+<!--     site = str_remove(site, 'UO_'), -->
+<!--     traffic = if_else(str_detect(location, 'Site 1'), 'High', 'Low'), -->
+<!--     location = str_glue('{site}: {traffic}'), -->
+<!--     copies = convert_cq_to_copies(pcr_ct), -->
+<!--     copies_plus_one = if_else(is.na(copies), 1, copies + 1), -->
+<!--     shape = if_else(pcr_positive == 'Positive', 15, 0), -->
+<!--     alpha = if_else(pcr_positive == 'Positive', 1, 0.5), -->
+<!--     size = if_else(pcr_positive == 'Positive', 1.5, 1), -->
+<!--     ) -->
 
-plt_cases <- 
+
+
+<!-- fig2_swabs_df |>  -->
+<!--   ggplot() + -->
+<!--   geom_rug(data = plt_cases,  -->
+<!--            aes(case_date),  -->
+<!--            alpha  = 0.2, -->
+<!--            linewidth = 0.5, -->
+<!--            length = unit(5, 'cm')) + -->
+<!--   geom_point(aes(date_swab, location,  -->
+<!--              color = copies_plus_one, -->
+<!--              shape = shape, -->
+<!--              size = size -->
+<!--              )) + -->
+<!--   scale_shape_identity() + -->
+<!--   scale_alpha_identity() +  -->
+<!--   scale_size_identity() +  -->
+<!--   scale_color_viridis_c(option = 'C',  trans = "log10") + -->
+<!--   scale_x_study_dates() + -->
+<!--   facet_wrap(~site, ncol = 1, scales = 'free_y') + -->
+<!--   labs(x = NULL,  -->
+<!--        y = 'Building: Traffic level',  -->
+<!--        color = "Copies + 1") + -->
+<!--   theme_bw() + -->
+<!--   theme( -->
+<!--     panel.grid = element_blank(), -->
+<!--     strip.background = element_blank(), -->
+<!--     strip.text.x = element_blank() -->
+<!--   ) -->
+
+
+<!-- plt_co2 <-  -->
+<!--   plt_swabs |>  -->
+<!--   select(date_swab, site, traffic, co2) |>  -->
+<!--   arrange(date_swab) |>  -->
+<!--   glimpse() -->
+
+<!-- plt_co2_early <- plt_co2 |> filter(date_swab < '2022-01-01') -->
+<!-- plt_co2_late <- plt_co2 |> filter(date_swab > '2022-01-01') -->
+
+<!-- plt_wifi <-  -->
+<!--   wifi |>  -->
+<!--   mutate(site = str_remove(site, 'UO_')) |>  -->
+<!--   select(date, site, clients) -->
+
+<!-- ggplot( -->
+<!--   data = plt_co2_early, -->
+<!--   aes(date_swab, co2,  -->
+<!--       color = traffic, -->
+<!--       group = traffic) -->
+<!-- ) + -->
+<!--   geom_line(data = plt_co2_early) + -->
+<!--   geom_line(data = plt_co2_late) + -->
+<!--   geom_point(data = plt_co2_early, size = 0.5) + -->
+<!--   geom_point(data = plt_co2_late, size = 0.5) + -->
+
+<!--   facet_wrap(~site, ncol = 1) + -->
+<!--   scale_x_study_dates() + -->
+<!--   theme_remove_grid() +  -->
+<!--   theme(axis.title.y = element_markdown()) + -->
+<!--   labs(x = NULL, y = "CO~2~", color = "Traffic level") -->
+
+
+<!-- plt_co2 -->
+<!-- # rm(plt_cases, plt_swabs) -->
+<!-- ``` -->
+
+
+
+---------------------------------------------------------------
+
+## Figure 2. (like Fig1 but disaggregated)
+
+```{r fig.width=10, fig.height=8}
+## thematic elements and axis scales -----
+scale_y_co2 <- function() scale_y_continuous(limits = c(400, 950))  
+scale_y_copies <- function() scale_y_log10(limits = c(1, 300))
+scale_y_cases <- function() {
+  scale_y_continuous(breaks = seq(0, 5, 2), limits = c(0,5))
+}
+scale_y_wifi <- function() scale_y_continuous(limits = c(0, 1000))
+
+scale_color_traffic <- function(){
+  scale_color_carto_d(
+    palette = 2,
+    breaks = c('High', 'Low'),
+    labels = c('High', 'Low'),
+    drop = F
+  )
+}
+theme_axes_lb <- function(){
+  theme_remove_grid() +
+  theme(
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.line = element_line(colour = "gray30",
+                             linewidth = rel(0.5)),
+    plot.margin = margin(2,2,2,2, 'mm')
+  )
+}
+
+remove_y_axis_if_not_leftmost <- function(p, site){
+  if (site %in% c('DMS', 'MRT')) return(p)
+  p + theme_no_y_labels()
+}
+
+## individual plots ====
+plot_site_cases <- function(data, site){
+  p <- data |>
+    ggplot(aes(biweek, cases, 
+               fill = factor(role, levels = c('Employee', 'Student')))
+           ) +
+    geom_col(linewidth = .1, width = 2.5) +
+    geom_vline(data = tibble(xint = as_date('2022-02-02')),
+               aes(xintercept = xint), lty = 2, alpha = 0.35) +
+    scale_x_study_dates() +
+    scale_y_cases() +
+    scale_fill_carto_d(
+      palette = 1,  
+      breaks = c('Employee', 'Student'),
+      labels = c('Employee', 'Student'),
+      drop = FALSE,
+      name = 'Role') +
+    labs(fill = 'Role', y = 'Cases', x = NULL) +
+    theme_no_x_labels() +
+    theme_axes_lb() +
+    theme(axis.title.y = element_markdown()) 
+  remove_y_axis_if_not_leftmost(p, site)
+}
+
+# swabs
+plot_site_swabs <- function(data, site){
+  data_early <- data |> filter(date_swab < '2022-01-01')
+  data_late <- data |> filter(date_swab > '2022-01-01')
+  
+  p <- data_early |>
+    ggplot(aes(date_swab, copies_plus_one, color = traffic)) +
+    geom_path(alpha = 0.8, linewidth = 0.6) +
+    geom_point(size = 0.6, alpha = 0.8) +
+    geom_path(data = data_late, alpha = 0.8, linewidth = 0.6) +
+    geom_point(data = data_late, size = 0.6, alpha = 0.8) +
+    scale_color_traffic() +
+    scale_y_copies() +
+    labs(x = NULL, y = 'Copies + 1', color = 'Location Traffic level') +
+    theme_no_x_labels() +
+    theme_axes_lb() +
+    theme(axis.title.y = element_markdown(),
+          legend.text = element_markdown())
+  remove_y_axis_if_not_leftmost(p, site)
+}
+
+# co2
+plot_site_co2 <- function(data, site){
+  data_early <- data |> filter(date_swab < '2022-01-01')
+  data_late <- data |> filter(date_swab > '2022-01-01')
+  
+  p <- data_early |> 
+    ggplot(aes(date_swab, co2, color = traffic)) +
+    geom_path(alpha = 0.8) +
+    geom_point(alpha = 0.8, size = 0.6) +
+    geom_path(data = data_late, alpha = 0.8) +
+    geom_point(data = data_late, alpha = 0.8, size = 0.6) +
+    scale_x_study_dates() +
+    scale_y_co2() +
+    scale_color_traffic() +
+    labs(y = 'CO~2~', x = NULL) +
+    theme_no_x_labels() +
+    theme_axes_lb() +
+    theme(axis.title.y = element_markdown(), legend.position = 'none')
+  remove_y_axis_if_not_leftmost(p, site)
+}
+
+# wifi
+plot_site_wifi <- function(data, site){
+  if (is.null(data)) return(patchwork::plot_spacer())
+  
+  p <- data |> 
+    ggplot(aes(date, clients)) +
+    geom_path(alpha = 0.5) +
+    scale_x_study_dates() +
+    scale_y_wifi() +
+    labs(y = 'Wifi', x = NULL) +
+    theme_axes_lb() +
+    theme(
+      axis.title.y = element_markdown(),
+      axis.text.x = element_markdown(size = 7))
+  remove_y_axis_if_not_leftmost(p, site)
+}
+
+## Plot datasets ====
+fig2_cases <- 
   cases |> 
   unnest(associated_sites) |> 
   pivot_longer(UC:TBT, names_to = 'site') |> 
   mutate(site = if_else(site == 'UC', '90U', site)) |> 
   filter(value, 
-         case_date > min(plt_swabs$date_swab - 5),
-         case_date < max(plt_swabs$date_swab + 5),
+         case_date > min(swabs_tidy$date_swab - 5),
+         case_date < max(swabs_tidy$date_swab + 5),
          ) |> 
-  select(-value, -biweek, -case)
+  group_by(site, biweek, role) |> 
+  summarise(cases = n(),
+            dates = list(case_date),
+            .groups = 'drop') |>
+  group_nest(site, .key = "cases")
 
-plt_swabs |> 
-  ggplot() +
-  geom_rug(data = plt_cases, 
-           aes(case_date), 
-           alpha  = 0.2,
-           linewidth = 0.5,
-           length = unit(5, 'cm')) +
-  geom_point(aes(date_swab, location, 
-             color = copies_plus_one,
-             shape = shape,
-             size = size
-             )) +
-  scale_shape_identity() +
-  scale_alpha_identity() + 
-  scale_size_identity() + 
-  scale_color_viridis_c(option = 'C',  trans = "log10") +
-  scale_x_study_dates() +
-  facet_wrap(~site, ncol = 1, scales = 'free_y') +
-  labs(x = NULL, 
-       y = 'Building: Traffic level', 
-       color = "Copies + 1") +
-  theme_bw() +
-  theme(
-    panel.grid = element_blank(),
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
-  )
+fig2_swabs <- 
+  swabs_tidy |> 
+  mutate(
+    site = str_remove(site, 'UO_'),
+    traffic = if_else(str_detect(location, 'Site 1'),
+                      'High', 'Low'),
+    copies = convert_cq_to_copies(pcr_ct),
+    copies_plus_one = if_else(is.na(copies), 1, copies + 1),
+    ) |> 
+  select(site, traffic, date_swab, copies_plus_one) |>
+  group_nest(site, .key = "swabs")
 
+fig2_wifi <- 
+  wifi |> 
+  mutate(site = str_remove(site, 'UO_')) |> 
+  select(date, site, clients) |>
+  group_nest(site, .key = "wifi")
+
+fig2_co2 <- 
+   swabs_tidy |> 
+  transmute(
+    site = str_remove(site, 'UO_'),
+    traffic = if_else(str_detect(location, 'Site 1'), 'High', 'Low'),
+    date_swab,
+    co2,
+    ) |> 
+  group_nest(site, .key = "co2") |> 
+  print()
+
+# combine nested df
+fig2_df_nest <- fig2_cases |> 
+  left_join(fig2_swabs, by = join_by(site)) |> 
+  left_join(fig2_wifi, by = join_by(site)) |> 
+  left_join(fig2_co2, by = join_by(site))
+
+## map data to plots, combine into panel for each site ====
+fig2_plts <- fig2_df_nest |>
+  arrange(site == '90U') |> 
+  transmute(
+    site,
+    plt_cases = map2(cases, site, plot_site_cases),
+    plt_swabs = map2(swabs, site, plot_site_swabs),
+    plt_co2 = map2(co2, site, plot_site_co2),
+    plt_wifi = map2(wifi, site, plot_site_wifi),
+  ) |> 
+  mutate(panel = pmap(
+    .l = list(site, plt_cases, plt_swabs, plt_co2, plt_wifi),
+    .f = function(site,plt_cases, plt_swabs, plt_co2, plt_wifi) {
+      p <- 
+        patchwork::wrap_plots(
+          plt_cases, plt_swabs, plt_co2, plt_wifi, ncol = 1
+        ) + 
+        patchwork::plot_annotation(subtitle = site)
+      
+      if (site %in% c('90U', 'MNT')) return(p)
+      p + patchwork::plot_annotation(theme = theme(
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank()
+      ))
+    }))
+
+## Combine all 6 sites into 2*3 panel
+(
+  figure2 <- 
+    patchwork::wrap_plots(
+      fig2_plts$panel, 
+      tag_level = 'new',
+      guides = 'collect'
+    ) 
+)
 ```
-
-
-
-```{r}
-plt_co2 <- 
-  plt_swabs |> 
-  select(date_swab, site, traffic, co2) |> 
-  arrange(date_swab) |> 
-  glimpse()
-
-plt_co2_early <- plt_co2 |> filter(date_swab < '2022-01-01')
-plt_co2_late <- plt_co2 |> filter(date_swab > '2022-01-01')
-
-
-ggplot(
-  data = plt_co2_early,
-  aes(date_swab, co2, 
-      color = traffic,
-      group = traffic)
-) +
-  geom_line(data = plt_co2_early) +
-  geom_line(data = plt_co2_late) +
-  geom_point(data = plt_co2_early, size = 0.5) +
-  geom_point(data = plt_co2_late, size = 0.5) +
-  
-  facet_wrap(~site, ncol = 1) +
-  scale_x_study_dates() +
-  theme_remove_grid() + 
-  theme(axis.title.y = element_markdown()) +
-  labs(x = NULL, y = "CO~2~", color = "Traffic level")
-  
-
-plt_co2
-# rm(plt_cases, plt_swabs)
-```
-
