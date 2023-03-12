@@ -1161,6 +1161,7 @@ It's not really the most sound approach, but the data is questionable to begin w
 
 ```{r fig.width=10, fig.height=8}
 ## thematic elements and axis scales -----
+# limits are based on the min/max of data to keep scales consistent across all plots of a given variable
 scale_y_co2 <- function() scale_y_continuous(limits = c(400, 950))  
 scale_y_copies <- function() scale_y_log10(limits = c(1, 300))
 scale_y_cases <- function() {
@@ -1180,9 +1181,7 @@ theme_axes_lb <- function(){
   theme_remove_grid() +
   theme(
     panel.border = element_blank(),
-    panel.grid = element_blank(),
-    axis.line = element_line(colour = "gray30",
-                             linewidth = rel(0.5)),
+    axis.line = element_line(colour = "gray30", linewidth = rel(0.5)),
     plot.margin = margin(2,2,2,2, 'mm')
   )
 }
@@ -1198,7 +1197,7 @@ plot_site_cases <- function(data, site){
     ggplot(aes(biweek, cases, 
                fill = factor(role, levels = c('Employee', 'Student')))
            ) +
-    geom_col(linewidth = .1, width = 2.5) +
+    geom_col(linewidth = .1, width = 2.5, color = 'grey70') +
     geom_vline(data = tibble(xint = as_date('2022-02-02')),
                aes(xintercept = xint), lty = 2, alpha = 0.35) +
     scale_x_study_dates() +
@@ -1227,8 +1226,9 @@ plot_site_swabs <- function(data, site){
     geom_point(size = 0.6, alpha = 0.8) +
     geom_path(data = data_late, alpha = 0.8, linewidth = 0.6) +
     geom_point(data = data_late, size = 0.6, alpha = 0.8) +
-    scale_color_traffic() +
+    scale_x_study_dates() +
     scale_y_copies() +
+    scale_color_traffic() +
     labs(x = NULL, y = 'Copies + 1', color = 'Location Traffic level') +
     theme_no_x_labels() +
     theme_axes_lb() +
@@ -1271,7 +1271,7 @@ plot_site_wifi <- function(data, site){
     theme_axes_lb() +
     theme(
       axis.title.y = element_markdown(),
-      axis.text.x = element_markdown(size = 7))
+      axis.text.x = element_markdown(size = 6))
   remove_y_axis_if_not_leftmost(p, site)
 }
 
@@ -1362,3 +1362,12 @@ fig2_plts <- fig2_df_nest |>
     ) 
 )
 ```
+
+```{r}
+figure_1A
+ggsave('fig/figure_1.png', device = 'png', width = 7, height = 7)
+
+figure_1A
+ggsave('fig/test.pdf', device = 'pdf', width = 7, height = 7)
+```
+
