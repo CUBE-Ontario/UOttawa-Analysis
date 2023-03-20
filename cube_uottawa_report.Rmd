@@ -10,6 +10,8 @@ output:
     highlight: kate
 ---
 
+Manuscript draft (google doc) available here:   https://docs.google.com/document/d/15joiEhDGsYJTgS0y5KkjgVT_Usv1emeCA80fxc0Odkk/edit?usp=sharing
+
 ----
 
 ## TODO
@@ -24,9 +26,10 @@ output:
 
 - <input type="checkbox" checked>  Model for cases ~ .</input>
 - <input type="checkbox" checked>  Test high vs low traffic as FE in RE model</input>
-- <input type="checkbox" unchecked>  Finalize fig. 2</input>
-- <input type="checkbox" unchecked>  Finalize fig. 3</input>
-- <input type="checkbox" unchecked>   Finish written methods and results</input>
+- <input type="checkbox" checked>  Finalize fig. 2</input>
+- <input type="checkbox" checked>  Finalize fig. 3</input>
+- <input type="checkbox" unchecked>  Fig. 4: refresh data </input>
+- <input type="checkbox" unchecked>  Finish written methods and results</input>
 
 ----
 
@@ -66,6 +69,20 @@ get_date_week <- function(x){
   str_glue("{y}-{w}")
 }
 
+# reverses get_date_week to Weds date during week
+week_to_date <- function(year_week){
+  year <- str_extract(year_week, '^....')
+  d <- str_glue('{year}-01-01') |> as_date()
+  wk <- str_extract(year_week, '..$') |> as.integer()
+  ydays <- if_else(
+    year == '2021',
+    days(7*wk - 2),
+    days(7*wk - 3),
+  )
+  return(d + ydays)
+}
+
+
 # get biweekly bin date for vector of dates
 get_date_biweekly <- function(x){
   day_of_week <-  lubridate::wday(x)
@@ -98,6 +115,15 @@ week_midpoint_date_lookup <- function(start = '2021-01-01', end = '2023-01-01'){
     group_by(week) |> 
     summarise(date = mean(date))
 }
+
+# convert site1/site2 to hi/low traffic
+get_traffic_level <- function(location){
+  if_else(
+    str_detect(location, 'Site 1'), 
+    'high traffic', 
+    'low traffic'
+  )
+} 
 
 binom_ci <- function(x, n){
   Hmisc::binconf(x, n, method = 'wilson', alpha = 0.05) |> 
@@ -243,11 +269,19 @@ event_dates <-
   mutate(across(start:end, as_date))
 
 # UOttawa cases data
+# clean data from: source(here('R/01_impute_missing_case_dates.R'))
 cases <-
   read_rds(here('data/cases_rule_imputed.rds')) |> 
   select(case, role, case_date, UC:TBT) |>
   mutate(biweek = get_date_biweekly(case_date)) |> 
   nest(associated_sites = UC:TBT)
+
+
+total_n_cases_study_period <- 
+  cases |> 
+  filter(case_date > '2021-09-20') |> 
+  nrow()
+
 
 # Summaries -----------------------------------------
 # 
@@ -270,8 +304,7 @@ co2_summary <- function(swabs){
 }
   
 # overall summary
-swab_summary <- 
-  swabs_tidy |> positivity_summary()
+swab_summary <- swabs_tidy |> positivity_summary()
 
 # site summary
 swab_summary_sites <- swabs_tidy |> 
@@ -279,10 +312,9 @@ swab_summary_sites <- swabs_tidy |>
   positivity_summary()
   
 # high-low traffic summary
-swab_summary_location_traffic <- swabs_tidy |> 
-  mutate(traffic = if_else(
-    str_detect(location, 'Site 1'), 'high traffic', 'low traffic'
-  )) |> 
+swab_summary_location_traffic <- 
+  swabs_tidy |> 
+  mutate(traffic = get_traffic_level(location)) |> 
   group_by(traffic) |> 
   positivity_summary()
 
@@ -375,20 +407,20 @@ wifi_biweek_sites <-
 
 swab_coords <- tribble(
   ~site, ~name, ~lat, ~lng,
-  'MRT', 'Morrisette Hall (MRT)', 45.423239101483546, -75.68428970961207,
-  'MNT', 'Montpetit', 45.42254171025894, -75.68265871464943,
-  '90U', '90 University', 45.42242555707402, -75.6850144991752,
-  'DMS', 'Desmarais Bldg.', 45.42387679340988, -75.68727075448753,
-  'TBT', 'Tabaret Hall', 45.42450940162542, -75.68631900184072,
-  'LPR',  'Louis Pasteur Bldg.', 45.421375668614466, -75.68026389993058,
+  'MRT', 'Morrisette Hall (MRT)', 45.4232391, -75.684289,
+  'MNT', 'Montpetit', 45.4225417102, -75.6826587146,
+  '90U', '90 University', 45.422425557, -75.68501449,
+  'DMS', 'Desmarais Bldg.', 45.4238767934, -75.687270754,
+  'TBT', 'Tabaret Hall', 45.4245094016, -75.6863190018,
+  'LPR',  'Louis Pasteur Bldg.', 45.42137566861, -75.6802638999,
 )
 
 ww_coords <- tribble(
   ~site, ~name, ~lat, ~lng,
-  'aa', 'Annex Residence', 45.42678129026445, -75.68034405960745,
-  'fa', 'Faculty of Soc. Sci.', 45.421624722628515, -75.68390386012699,
-  'ft', 'Friel Residence', 45.43043440080566, -75.68290766533741,
-  'tbt', 'Tabaret Hall', 45.42450940162542, -75.68631900184072
+  'aa', 'Annex Residence', 45.4267812902, -75.6803440596,
+  'fa', 'Faculty of Soc. Sci.', 45.4216247, -75.6839038601,
+  'ft', 'Friel Residence', 45.4304344008, -75.6829076653,
+  'tbt', 'Tabaret Hall', 45.4245094016, -75.6863190018
   # 'na', 'North sampling Site', NA, NA,
   # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
 )
@@ -428,9 +460,73 @@ Overall, {positivity_ovr}% of swabs were PCR-positive for SARS-CoV-2, with indiv
 "
   )
 
-rs_results <- rs_data |> 
-  glue::glue_data()
+# rs_results <- rs_data |> glue::glue_data()
+
+
+## corr -----
+
+# joined data for pairwise correlation 
+biweekly_data <- swabs_biweekly |> 
+  transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
+  left_join(
+    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
+    by = 'biweek'
+    ) |> 
+  left_join(
+    uottawa_ww_biweekly |> transmute(biweek, `University WW` = signal),
+    by = 'biweek'
+  ) |> 
+  left_join(
+    regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
+    by = 'biweek'
+  ) |> 
+  left_join(
+    cases_biweekly |> transmute(biweek, Cases = cases),
+    by = 'biweek'
+  )
+
+corr_spearman <- biweekly_data |> 
+  select(-biweek) |> 
+  corrr::correlate(use = 'pairwise.complete.obs',
+                   method = 'spearman')
+
+# to get pvalues...
+corrtest <- 
+  biweekly_data |> 
+  select(-biweek) |> 
+  psych::corr.test(
+    use = 'pairwise',
+    method = 'spearman',
+    adjust = 'none' # See p.adjust for "holm" > "bonferroni").
+  )
+
+# spearman r and p-values; upper triangle has adj. correlations
+corr_r <- corrtest$r |> round(3)
+corr_p <- corrtest$p |> round(3)
+
+# remove lower tri with raw probabilities
+corr_r[lower.tri(corr_r, diag = T)] <- NA
+corr_p[lower.tri(corr_p, diag = T)] <- NA
+
+corr_tbl_r <- kableExtra::kable(
+  x = corr_r,
+  format = 'pipe',
+  caption = 'Campus-wide, biweekly metrics: Spearman r'
+)
+corr_tbl_p <- kableExtra::kable(
+  x = corr_p,
+  format = 'pipe',
+  caption = 'Campus-wide, biweekly metrics: p-value on Spearman r'
+)
+
+corr_ci <- corrtest |> 
+  pluck('ci') |>
+  as_tibble() |> 
+  mutate(terms = rownames(corrtest$ci), .before = 1L)
+
+rm(corr_r, corr_p, corrtest)
 ```
+
 </details>
 
 <details>
@@ -517,8 +613,7 @@ fig1_co2 <-
   ggplot(swabs_biweekly, aes(biweek, co2_mean)) +
   geom_point(color = theme_color, shape = 1, alpha = 0.85, size = 1) +
   geom_smooth(fill = theme_color, alpha = 0.2, size = 0.5) +
-  labs(x = NULL, y = NULL,
-       title = 'CO~2~ (ppm)') +
+  labs(x = NULL, y = NULL, title = 'CO~2~ (ppm)') +
   scale_x_study_dates() +
   theme_no_x_labels() +
   theme_remove_grid()
@@ -539,7 +634,8 @@ fig1_wifi <-
 fig1_uo_ww <-
   ggplot(uottawa_ww_biweekly,
          aes(biweek, signal)) +
-  geom_smooth(span = 0.4, alpha = 0.2, size = 0.5, fill = theme_color, na.rm = T) +
+  geom_smooth(span = 0.4, alpha = 0.2, size = 0.5,
+              fill = theme_color, na.rm = T) +
   geom_point(
     # aes(size = n),
     alpha = 0.85, shape = 1, size = 1,
@@ -582,108 +678,21 @@ figure_1 <- wrap_plots(
 
 rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1_cases)
 
-``` 
-
-</details>
-
-----
-
-## Results
-
-### Abstract Results
-
-```{r abstract, results='asis'}
-cat(rs_abstract)
-```
-
----
-
-### Written Results
-
-```{r written results, results='asis'}
-cat(rs_results)
-```
-
-----
-
-### Summary Tables
-
-```{r}
-# stack summaries
-swab_summary |> 
-  mutate(site = 'Overall') |> 
-  bind_rows(swab_summary_sites) |> 
-  relocate(site) |> 
-  set_names(c('Site', 'N', 'PCR-Positive', '%')) |> 
-  kableExtra::kable(
-    format = 'pipe',
-    caption = 'Building Summary'
-  )
-```
 
 
-
----
-
-
-### Figures
-
-```{r fig.height=6, fig.width=5.25, fig.align='left'}
-(figure_1) 
-```
-
-**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
-
-----
-
-<br>
-
-```{r ts correlation, fig.height=4, fig.width=4, fig.align='left'}
-# joined data for pairwise correlation 
-biweekly_data <- swabs_biweekly |> 
-  transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
-  left_join(
-    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
-    by = 'biweek'
-    ) |> 
-  left_join(
-    uottawa_ww_biweekly |> transmute(biweek, `University WW` = signal),
-    by = 'biweek'
-  ) |> 
-  left_join(
-    regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
-    by = 'biweek'
-  ) |> 
-  left_join(
-    cases_biweekly |> transmute(biweek, Cases = cases),
-    by = 'biweek'
-  )
-
-corr_spearman <- corrr::correlate(
-  biweekly_data, method = 'spearman')
+## Figure 2: Corr heatmap -----------------------------------
 
 figure_2 <- corrr::autoplot(corr_spearman, triangular = "lower",
                              barheight = 10) +
   geom_text(aes(label = r |> round(2)), size = 3.5)
   
-figure_2
 
-rm(corr_spearman)
-```
+## Figure 3: Per-building res ---------------------------------
 
-**Figure 2**. Spearman correlation between biweekly campus-wide variables: self-reported cases, floor swab positivity (Swab PCR), mean CO2, mean daily peak Wi-Fi connections, aggregate waste-water signal at the university (University WW) and regional level (Ottawa WW), 
+#### thematic elements and axis scales -----
 
-
-----
-
-
-
---------------------------------------------------------
-
-```{r fig.width=10, fig.height=6}
-## thematic elements and axis scales -----
 # limits are based on the min/max of data to keep scales consistent across all plots of a given variable
-scale_y_co2 <- function() scale_y_continuous(limits = c(400, 950))  
+scale_y_co2 <- function() scale_y_continuous(limits = c(400, 950))
 scale_y_copies <- function() scale_y_log10(limits = c(1, 300))
 scale_y_cases <- function() {
   scale_y_continuous(breaks = seq(0, 5, 2), limits = c(0,5))
@@ -698,6 +707,7 @@ scale_color_traffic <- function(){
     drop = F
   )
 }
+
 theme_axes_lb <- function(){
   theme_remove_grid() +
   theme(
@@ -712,7 +722,7 @@ remove_y_axis_if_not_leftmost <- function(p, site){
   p + theme_no_y_labels()
 }
 
-## individual plots ====
+#### individual plot functions -----
 plot_site_cases <- function(data, site){
   p <- data |>
     ggplot(aes(biweek, cases, 
@@ -816,8 +826,7 @@ fig3_swabs <-
   swabs_tidy |> 
   mutate(
     site = str_remove(site, 'UO_'),
-    traffic = if_else(str_detect(location, 'Site 1'),
-                      'High', 'Low'),
+    traffic = get_traffic_level(location),
     copies = convert_cq_to_copies(pcr_ct),
     copies_plus_one = if_else(is.na(copies), 1, copies + 1),
     ) |> 
@@ -834,12 +843,15 @@ fig3_co2 <-
    swabs_tidy |> 
   transmute(
     site = str_remove(site, 'UO_'),
-    traffic = if_else(str_detect(location, 'Site 1'), 'High', 'Low'),
+    traffic = get_traffic_level(location),
     date_swab,
     co2,
     ) |> 
   group_nest(site, .key = "co2") |> 
   print()
+
+
+#### data handling and making building panels -----
 
 # combine nested df
 fig3_df_nest <- fig3_cases |> 
@@ -847,7 +859,7 @@ fig3_df_nest <- fig3_cases |>
   left_join(fig3_wifi, by = join_by(site)) |> 
   left_join(fig3_co2, by = join_by(site))
 
-## map data to plots, combine into panel for each site ====
+# map data to plots, combine into panel for each site
 fig3_plts <- fig3_df_nest |>
   arrange(site == '90U') |> 
   transmute(
@@ -872,15 +884,103 @@ fig3_plts <- fig3_df_nest |>
       ))
     }))
 
-## Combine all 6 sites into 2*3 panel
-(
-  figure_3 <- 
-    patchwork::wrap_plots(
-      fig3_plts$panel, 
-      tag_level = 'keep',
-      guides = 'collect'
-    )
-)
+#### Combine all 6 sites' plots into 2*3 panel -----
+
+figure_3 <- 
+  patchwork::wrap_plots(
+    fig3_plts$panel, 
+    tag_level = 'keep',
+    guides = 'collect'
+  )
+
+
+``` 
+
+</details>
+
+----
+
+## Results
+
+### Abstract Results
+
+```{r abstract, results='asis'}
+cat(rs_abstract)
+```
+
+---
+
+<!-- ### Written Results -->
+
+<!-- ```{r written results, results='asis'} -->
+<!-- # cat(rs_results) -->
+<!-- ``` -->
+
+<!-- ---- -->
+
+### Tables
+
+
+#### Summary table
+
+```{r}
+# stack summaries
+swab_summary |> 
+  mutate(site = 'Overall') |> 
+  bind_rows(swab_summary_sites) |> 
+  relocate(site) |> 
+  set_names(c('Site', 'N', 'PCR-Positive', '%')) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Building Summary'
+  )
+```
+
+
+#### Spearman correlation between campus-wide measures
+
+```{r}
+kableExtra::kable(
+  x = corr_ci, 
+  format = 'pipe',
+  caption = 'Spearman r for biweekly, campus-wide measures'
+  )
+```
+
+
+
+---
+
+
+### Figures
+
+```{r fig.height=6, fig.width=5.25, fig.align='left'}
+(figure_1) 
+```
+
+**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
+
+----
+
+<br>
+
+```{r ts correlation, fig.height=4, fig.width=4, fig.align='left'}
+figure_2
+rm(corr_spearman)
+```
+
+**Figure 2**. Spearman correlation between biweekly campus-wide variables: self-reported cases, floor swab positivity (Swab PCR), mean CO2, mean daily peak Wi-Fi connections, aggregate waste-water signal at the university (University WW) and regional level (Ottawa WW), 
+
+
+----
+
+
+
+--------------------------------------------------------
+
+
+```{r fig.width=10, fig.height=6}
+figure_3
 ```
 **Figure 3.** Campus COVID-19 cases, swab results, CO2 concentrations (during swab collection), and daily peak Wi-Fi connections by building. Cases plots show counts of self-reported  for students and employees separately; several cases are associated with multiple buildings. Case data collection was abandoned in early February 2022 (dashed line). Swabs and CO plots show results at two locations within each building, with one sample collected in a high-traffic area and the other in a low-traffic area. Swab PCR results are expressed as the number of SARS-CoV-2 RNA copies plus one, on a log-scale. Points represent the result for a single swab. Wi-fi plots show the peak daily number of simultaneous connections per building. No Wi-Fi data was available for the 90U building. 
 
@@ -900,9 +1000,10 @@ ggsave('fig/figure_3.png', figure_3, device = 'png', height = 8, width = 12)
 ```
 
 ------------------------------------------------------
+  
 <br>
-
-```{r fig.align='center'}
+  
+```{r}
 figure_sites_map
 ```
 
@@ -1008,10 +1109,10 @@ rm(p1, p2, add_poisson_density_curve, add_nb_density_curve)
 Backwards selection arrived at the model with `swab_pcr`, `wifi`, `ottawa_ww`, and the interaction between `ottawa_ww` & `swab_pcr`.  
 
 ```{r}
-# 30 complete obs if excluding univeristy ww entirely
+# 30 complete obs when excluding university ww
 df_mod_no_uniww <- df_mod |> select(-university_ww) |> na.omit()
 
-# backwards select with n=30, no university ww
+# poisson model for cases with interactions
 full_model <- glm(
   cases ~ . ^ 2,
   data = df_mod_no_uniww |> select(-biweek), 
@@ -1022,7 +1123,9 @@ backwards_selected <- step(full_model, trace = F)
 stopifnot(backwards_selected$converged)
 
 # standardized coefs and 95% CI
-broom::tidy(backwards_selected, conf.int = T, conf.level = 0.95) |> 
+backwards_selected |> 
+  broom::tidy(conf.int = T, conf.level = 0.95) |> 
+  mutate(across(where(is.double), ~round(., 4))) |> 
   kableExtra::kable(
     format = 'pipe',
     caption = "Poisson model with interactions: Coefficients & 95% CI"
@@ -1075,7 +1178,9 @@ stopifnot(backwards_selected_me$converged)
 AER::dispersiontest(backwards_selected_me)
 
 # regression coefs and 95%CI
-broom::tidy(backwards_selected_me, conf.int = T, conf.level = 0.95) |> 
+backwards_selected_me |> 
+  broom::tidy(conf.int = T, conf.level = 0.95) |> 
+  mutate(across(where(is.double), ~round(., 3))) |> 
   kableExtra::kable(
     format = 'pipe',
     caption = "Main Effects Only: Coefficients & 95% CI"
@@ -1126,7 +1231,9 @@ full_model_nb <- MASS::glm.nb(
 backwards_selected_nb <- step(full_model_nb, trace = F)
 stopifnot(backwards_selected_nb$converged)
 
-broom::tidy(backwards_selected_nb, conf.int = T, conf.level = 0.95) |> 
+backwards_selected_nb |> 
+  broom::tidy(conf.int = T, conf.level = 0.95) |> 
+  mutate(across(where(is.double), ~round(., 4))) |> 
   rownames_to_column(var = 'Term') |> 
   kableExtra::kable(
     format = 'pipe',
@@ -1177,7 +1284,7 @@ rm(full_model_nb_int)
 
 --------------------------------------------
 
-## Model with university WW
+### Model with university WW
 
 If we consider the ten biweekly observations where we have linked cases, swabs, and university WW data,
 
@@ -1194,7 +1301,9 @@ stopifnot(backwards_selected_ww$converged)
 
 
 # standardized coefs and 95% CI
-broom::tidy(backwards_selected_ww, conf.int = T, conf.level = 0.95) |> 
+backwards_selected_ww |> 
+  broom::tidy(conf.int = T, conf.level = 0.95) |> 
+  mutate(across(where(is.double), ~round(., 4))) |> 
   kableExtra::kable(
     format = 'pipe',
     caption = "Poisson model with interactions: Coefficients & 95% CI"
@@ -1231,7 +1340,7 @@ rm(full_model_w_uni_ww)
 
 --------------------------------------------
 
-## GLMM: High v Low Traffic
+### GLMM: High v Low Traffic
 
 ```{r}
 swab_summary_location_traffic |> 
@@ -1250,8 +1359,8 @@ To evaluate whether high traffic locations are different from low traffic sites,
 traffic_swabs <- 
   swabs_tidy |> 
   mutate(
-    traffic = if_else(
-      str_detect(location, 'Site 1'), 'high', 'low') |> 
+    traffic = get_traffic_level(location) |> 
+      str_remove('\\straffic') |> 
       factor(levels = c('low', 'high'))
     ) |> 
   select(site, traffic, pcr_positive)
@@ -1260,10 +1369,140 @@ mixed_model <-
   lme4::glmer(pcr_positive ~ traffic + (1 | site), data = traffic_swabs,
             family = 'binomial')
 
-broom.mixed::tidy(mixed_model, conf.int = T, exponentiate = T) |> 
-  kableExtra::kable(format = 'pipe',
-                    caption = 'Traffic level - Random intercepts model')
+mixed_model |> 
+  broom.mixed::tidy(conf.int = T, exponentiate = T) |> 
+  mutate(across(where(is.double), ~round(., 4))) |> 
+  kableExtra::kable(
+    format = 'pipe',
+    caption = 'Traffic level - Random intercepts model'
+  )
 
+```
+
+
+--------------------------------------------
+
+
+### Model: Cases w/in buildings
+
+```{r}
+study_period_weeks <- crossing(
+  date = as_date(as_date('2021-09-21'):as_date('2022-01-31')),
+  site = unique(per_bldg_cases$site)
+  ) |> 
+  mutate(
+    week = get_date_week(date),
+    redate = week_to_date(week)) |> view()
+  distinct(site, week)
+
+# 72 cases associated with study bldgs (at least one)
+per_bldg_cases <- 
+  cases |> 
+  unnest(associated_sites) |> 
+  pivot_longer(UC:TBT, names_to = 'site') |> 
+  filter(value) |> 
+  select(-value, -biweek, -case) |> 
+  mutate(
+    site = str_replace(site, 'UC', '90U'),
+    week = get_date_week(case_date)) |> 
+  group_by(week, site) |> 
+  summarise(cases = n(), .groups = 'drop') |> 
+  right_join(study_period_weeks, by = join_by(week, site)) |> 
+  mutate(across(where(is.integer), ~if_else(is.na(.), 0, .))) |> 
+  arrange(week, site) |> 
+  mutate(week = week_to_date(week)) |> 
+  glimpse()
+
+per_bldg_cases |> 
+  ggplot(aes(x = week, 1)) +
+  geom_col() +
+  facet_wrap(~site)
+```
+
+
+```{r}
+# group swabs by week
+per_bldg_swabs <- 
+  swabs_tidy |> 
+  filter(date_swab < '2022-02-02') |> 
+  mutate(
+    site = str_remove(site, 'UO_'),
+    week = get_date_week(date_swab) |> as.character(),
+  ) |> 
+  group_by(site, week) |> 
+  summarise(
+    positivity = sum(pcr_positive == 'Positive') / n(),
+    .groups = 'drop') |> 
+  glimpse()
+
+per_bldg_cases <- 
+  cases |> 
+  filter(case_date > '2021-09-20') |> 
+  unnest(associated_sites) |> 
+  pivot_longer(UC:TBT, names_to = 'site') |> 
+  filter(value) |> 
+  select(-value, -biweek, -case) |> 
+  mutate(
+    site = str_replace(site, 'UC', '90U'),
+    week = get_date_week(case_date)) |> 
+  group_by(week, site) |> 
+  summarise(cases = n(), .groups = 'drop') |> 
+  glimpse()
+
+per_bldg_df <- per_bldg_swabs |> 
+  left_join(per_bldg_cases, by = join_by(site, week)) |> 
+  mutate(cases = if_else(is.na(cases), 0, cases)) |> 
+  print(n = 100)
+
+rm(weeks)
+```
+
+
+**Poisson GLM: Cases ~ positivity + (1|site)**
+
+```{r}
+per_bldg_model <- lme4::glmer(
+  cases ~ positivity + (1|site),
+  data = per_bldg_df,
+  family = 'poisson'
+)
+VarCorr(per_bldg_model)
+
+# wald CIs
+broom.mixed::tidy(per_bldg_model, conf.int = T, conf.level = 0.95)
+broom.mixed::glance(per_bldg_model)
+broom.mixed::augment(per_bldg_model) |> view()
+```
+
+
+```{r}
+points_df <- crossing(
+  positivity = seq(0, 1, 0.1),
+  site = unique(per_bldg_df$site) 
+)
+
+points_df |> 
+  mutate(   
+    pred = predict(
+      type = 'response',
+      object = per_bldg_model, 
+      newdata = points_df
+    )) |> 
+  ggplot(aes(positivity, pred, color = site)) +
+  geom_smooth(se = F, linewidth = 0.25, alpha = 1) + 
+  geom_jitter(data = per_bldg_df,
+              alpha = 0.75, shape = 1, size = 0.85,
+              width = 0.01, height = 0.01,
+              aes(positivity, cases)) +
+  labs(x = 'Swab positivity', y = 'Cases', color = 'Site')
+```
+
+
+```{r}
+broom.mixed::tidy(per_bldg_model, 'ran_vals',  conf.int = T, conf.level = 0.95, exponentiate = T) |> 
+  ggplot(aes(y = level,
+             x = estimate, xmin = conf.low, xmax = conf.high)) +
+  geom_pointrange()
 ```
 
 
@@ -1271,17 +1510,78 @@ broom.mixed::tidy(mixed_model, conf.int = T, exponentiate = T) |>
 
 ## Case Data Imputation... 
 
-Multiple imputation (mice) has a key assumption that data is MAR. But data is arguably not MAR, but because of some dynamics not present in the data. 
+Multiple imputation (mice) has a key assumption that data is MAR. But data is (arguably) not MAR, but because of some dynamics not measured in the data (like the university giving up hope on recording the data in 2022). 
 
-Using mice means making the analysis much more complicated... Generally, you need to model each imputed dataset and then analyze the pooled results. That gets a lot more complicated when needing to first aggregate the data, join to a bunch of other data, do various modelling tasks.... all nested within each iteration.
+Using `mice` means making the analysis *much* more complicated... Generally, you need to model each imputed dataset and then analyze the pooled results. That gets a lot more complicated when needing to first aggregate the data, join to a bunch of other data, do various modelling tasks.... all nested within each iteration.
 
 Instead, I used a simpler ad-hoc method:  
 
   - if positive-test-result date is available, use that, else:  
   - use -5 days from end-of-isolation date, or if not available,  
-  - use the test date as is, or if not available,  
   - use +3 days from symptoms-began date  
   
-It's not really the most sound approach, but the data is questionable to begin with...
+It's not really the most sound approach, but the data is a bit questionable to begin with anyway...
+
+
+<!-- ```{r} -->
+<!-- read_csv(here('data/uo_cases_to_date.csv')) |>  -->
+<!--   select(positive_result, symptoms_began, tested, isolation_end) |>  -->
+<!--   pivot_longer(-positive_result) |>  -->
+<!--   ggplot(aes(value, positive_result)) + -->
+<!--   geom_smooth(method = 'lm', alpha = 0.5) + -->
+<!--   geom_point(size = 0.5) + -->
+<!--   facet_grid(~name) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- read_csv(here('data/uo_cases_to_date.csv')) |>  -->
+<!--   filter(is.na(positive_result)) |>  -->
+<!--   select(symptoms_began, tested, isolation_end) |>  -->
+
+<!--   pivot_longer(everything()) |>  -->
+<!--   ggplot(aes(value)) + -->
+<!--   geom_histogram() + -->
+<!--   facet_grid(~name) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- read_csv(here('data/uo_cases_to_date.csv')) |>  -->
+<!--   # 28 have no result date -->
+<!--   filter(is.na(positive_result)) |>  -->
+<!--   # 3 of 28 are also missing isolation-end-date -->
+<!--   filter(is.na(isolation_end)) |>  -->
+<!--   # 0 are missing result, isolation, and symptoms! -->
+<!--   filter(is.na(symptoms_began)) |> -->
+<!--   glimpse() -->
+
+<!-- read_csv(here('data/uo_cases_to_date.csv')) |>  -->
+<!--   filter(is.na(positive_result), is.na(tested))  -->
+<!-- ``` -->
 
 --------------------------------------------
+
+
+
+<details>
+
+<summary>R Software details</summary>
+
+- Statistical analysis was performed using  R version 4.2.2 (2022-10-31; cite Ihaka & Gentleman).
+
+- Generalized linear models were created using the `glm` function. Mixed models were created using the `glmer` function from the package `lme4` (Bates et al.).
+
+- We fit poisson and negative binomial regression models with the number of campus-wide cases as the outcome; we applied backwards selection to evaluate predictors of campus-wide cases, including the aggregated results (means) of surface swabbing, waste-water testing, CO2 monitors, and Wi-Fi user counts.
+
+- We used mixed effects logistic regression to model the presence of SARS-CoV-2 infected individuals as a binary outcome (ie. positive event: one or more cases occurring during a week) in a university building, using surface swab PCR results as predictor with random intercepts for buildings.
+
+- Graphics were created with ggplot2 (v3.4.1)
+
+- Find our analysis code at our public github repository: https://github.com/CUBE-Ontario/UOttawa-Analysis
+
+
+```{r}
+sessionInfo()
+```
+
+</details>
