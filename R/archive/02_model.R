@@ -289,7 +289,7 @@ uo_sites |>
   geom_point(aes(color = factor(cases_bin)), na.rm = T) +
   facet_grid(site ~ .)
 
-# orignial mixed-effect logit model / binary outcome and numeric predictor
+# original mixed-effect logit model / binary outcome and numeric predictor
 # singularity an issue unless MRT removed
 #'` swab_model <-`
 #'`   lme4::glmer(`

@@ -26,6 +26,16 @@ swabs <-
   filter(type == "University", swab_type == 'flock') |>
   mutate(site = str_remove(site, 'UO_'))
 
+
+
+cases_raw <- read_rds(here('./data/latest_uo_cases.rds'))
+
+# lots of missing data
+naniar::vis_miss(cases_raw)
+cases_raw |>
+  glimpse()
+
+
 # uo cases data
 cases <-
   read_rds(here('./data/latest_uo_cases.rds')) |>

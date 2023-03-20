@@ -32,8 +32,7 @@ cases <-
       map(detect_sites)
   ) |>
   unnest_wider(locations) |>
-  select(-new, -building_list) |>
-  glimpse()
+  select(-new, -building_list)
 
 
 cases_imp <- cases |>
@@ -51,79 +50,79 @@ cases_imp <- cases |>
 write_rds(cases_imp, 'data/cases_rule_imputed.rds')
 
 
-
-## inspect missing data -----
-
-# 28 cases missing 'positive result date', mostly later in 2021/2022
-cases |>
-  summarise(across(everything(), ~sum(is.na(.)))) |>
-  pivot_longer(everything(),
-               names_to = 'variable',
-               values_to = 'n_missing')
-
-# 216 cases total; 184 missing some values;
-# 13% missing result date, 3% isolation end, 77% tested, 53% symptoms
-cases |> nrow()
-cases |> naniar::n_case_miss()
-cases |> select(positive_result) |>  naniar::n_case_miss()
-cases |> naniar::vis_miss()
-
-
-# roughly 1/4 of cases were never tested, just self-dx
-cases |> count(confirmed_by_test)
-
-# roughly 1/3 of cases were never tested during study period
-cases_imp |> filter(case_date > '2021-08-26') |> count(confirmed_by_test)
-
-
-# relationship between dates is not constant over time
-a <- cases_imp |>
-  select(positive_result, isolation_end) |>
-  mutate(res_to_iso = as.numeric(isolation_end - positive_result)) |>
-  ggplot(aes(isolation_end, days_since_res)) +
-  geom_point() +
-  geom_smooth()
-
-b <- cases_imp |>
-  select(positive_result, symptoms_began) |>
-  mutate(days_since_symptoms = as.numeric(symptoms_began - positive_result)) |>
-  ggplot(aes(symptoms_began, days_since_symptoms)) +
-  geom_point() +
-  geom_smooth()
-
-c <- cases_imp |>
-  select(positive_result, tested) |>
-  mutate(days_since_tested = as.numeric(tested - positive_result)) |>
-  ggplot(aes(tested, days_since_tested)) +
-  geom_point() +
-  geom_smooth()
-
-(a / b / c)
-
-
-# difference between pos res and iso end (mode is 5d)
-a <- cases_imp |>
-  filter(case_date > '2021-08-26') |>
-  mutate(diff = isolation_end - positive_result) |>
-  ggplot(aes(as.numeric(diff))) +
-  geom_histogram() +
-  labs(x = "isolation_end - positive_result")
-
-# difference between pos res and symptoms (mode 3d)
-b <- cases_imp |>
-  filter(case_date > '2021-08-26') |>
-  mutate(diff = symptoms_began - positive_result) |>
-  ggplot(aes(as.numeric(diff))) +
-  geom_histogram() +
-  labs(x = "symptoms_began - positive_result")
-
-# difference between pos res and tested (mode 0d)
-c <- cases_imp |>
-  filter(case_date > '2021-08-26') |>
-  mutate(diff = tested - positive_result) |>
-  ggplot(aes(as.numeric(diff))) +
-  geom_histogram() +
-  labs(x = "tested - positive_result")
-
-(a / b / c)
-rm(a, b, c)
+#
+# ## inspect missing data -----
+#
+# # 28 cases missing 'positive result date', mostly later in 2021/2022
+# cases |>
+#   summarise(across(everything(), ~sum(is.na(.)))) |>
+#   pivot_longer(everything(),
+#                names_to = 'variable',
+#                values_to = 'n_missing')
+#
+# # 216 cases total; 184 missing some values;
+# # 13% missing result date, 3% isolation end, 77% tested, 53% symptoms
+# cases |> nrow()
+# cases |> naniar::n_case_miss()
+# cases |> select(positive_result) |>  naniar::n_case_miss()
+# cases |> naniar::vis_miss()
+#
+#
+# # roughly 1/4 of cases were never tested, just self-dx
+# cases |> count(confirmed_by_test)
+#
+# # roughly 1/3 of cases were never tested during study period
+# cases_imp |> filter(case_date > '2021-08-26') |> count(confirmed_by_test)
+#
+#
+# # relationship between dates is not constant over time
+# a <- cases_imp |>
+#   select(positive_result, isolation_end) |>
+#   mutate(res_to_iso = as.numeric(isolation_end - positive_result)) |>
+#   ggplot(aes(isolation_end, days_since_res)) +
+#   geom_point() +
+#   geom_smooth()
+#
+# b <- cases_imp |>
+#   select(positive_result, symptoms_began) |>
+#   mutate(days_since_symptoms = as.numeric(symptoms_began - positive_result)) |>
+#   ggplot(aes(symptoms_began, days_since_symptoms)) +
+#   geom_point() +
+#   geom_smooth()
+#
+# c <- cases_imp |>
+#   select(positive_result, tested) |>
+#   mutate(days_since_tested = as.numeric(tested - positive_result)) |>
+#   ggplot(aes(tested, days_since_tested)) +
+#   geom_point() +
+#   geom_smooth()
+#
+# (a / b / c)
+#
+#
+# # difference between pos res and iso end (mode is 5d)
+# a <- cases_imp |>
+#   filter(case_date > '2021-08-26') |>
+#   mutate(diff = isolation_end - positive_result) |>
+#   ggplot(aes(as.numeric(diff))) +
+#   geom_histogram() +
+#   labs(x = "isolation_end - positive_result")
+#
+# # difference between pos res and symptoms (mode 3d)
+# b <- cases_imp |>
+#   filter(case_date > '2021-08-26') |>
+#   mutate(diff = symptoms_began - positive_result) |>
+#   ggplot(aes(as.numeric(diff))) +
+#   geom_histogram() +
+#   labs(x = "symptoms_began - positive_result")
+#
+# # difference between pos res and tested (mode 0d)
+# c <- cases_imp |>
+#   filter(case_date > '2021-08-26') |>
+#   mutate(diff = tested - positive_result) |>
+#   ggplot(aes(as.numeric(diff))) +
+#   geom_histogram() +
+#   labs(x = "tested - positive_result")
+#
+# (a / b / c)
+# rm(a, b, c)
