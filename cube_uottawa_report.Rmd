@@ -989,14 +989,12 @@ figure_3
 
 ```{r}
 ## save figures ----
-# doesn't work as a pdf for some reason
+# figs 1 & 3 don't work as a pdf for some reason
 ggsave('fig/figure_1.png', figure_1, device = 'png', width = 7, height = 7) 
 ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', height = 4, width = 4)
 ggsave('fig/figure_2.png', figure_2, device = 'png', height = 4, width = 4)
-ggsave('fig/figure_3.pdf', figure_3, device = 'pdf', height = 8, width = 12)
 ggsave('fig/figure_3.png', figure_3, device = 'png', height = 8, width = 12)
-# ggsave()
-# 
+
 ```
 
 ------------------------------------------------------
@@ -1388,40 +1386,14 @@ mixed_model |>
 ```{r}
 study_period_weeks <- crossing(
   date = as_date(as_date('2021-09-21'):as_date('2022-01-31')),
-  site = unique(per_bldg_cases$site)
+  site = c('90U', 'DMS', 'LPR', 'MNT', 'MRT', 'TBT')
   ) |> 
   mutate(
     week = get_date_week(date),
-    redate = week_to_date(week)) |> view()
+    redate = week_to_date(week)) |> 
   distinct(site, week)
 
-# 72 cases associated with study bldgs (at least one)
-per_bldg_cases <- 
-  cases |> 
-  unnest(associated_sites) |> 
-  pivot_longer(UC:TBT, names_to = 'site') |> 
-  filter(value) |> 
-  select(-value, -biweek, -case) |> 
-  mutate(
-    site = str_replace(site, 'UC', '90U'),
-    week = get_date_week(case_date)) |> 
-  group_by(week, site) |> 
-  summarise(cases = n(), .groups = 'drop') |> 
-  right_join(study_period_weeks, by = join_by(week, site)) |> 
-  mutate(across(where(is.integer), ~if_else(is.na(.), 0, .))) |> 
-  arrange(week, site) |> 
-  mutate(week = week_to_date(week)) |> 
-  glimpse()
-
-per_bldg_cases |> 
-  ggplot(aes(x = week, 1)) +
-  geom_col() +
-  facet_wrap(~site)
-```
-
-
-```{r}
-# group swabs by week
+# group swabs by week & site
 per_bldg_swabs <- 
   swabs_tidy |> 
   filter(date_swab < '2022-02-02') |> 
@@ -1432,9 +1404,9 @@ per_bldg_swabs <-
   group_by(site, week) |> 
   summarise(
     positivity = sum(pcr_positive == 'Positive') / n(),
-    .groups = 'drop') |> 
-  glimpse()
+    .groups = 'drop')
 
+# 72 cases associated with study bldgs (at least one)
 per_bldg_cases <- 
   cases |> 
   filter(case_date > '2021-09-20') |> 
@@ -1446,19 +1418,17 @@ per_bldg_cases <-
     site = str_replace(site, 'UC', '90U'),
     week = get_date_week(case_date)) |> 
   group_by(week, site) |> 
-  summarise(cases = n(), .groups = 'drop') |> 
-  glimpse()
+  summarise(cases = n(), .groups = 'drop') 
 
 per_bldg_df <- per_bldg_swabs |> 
   left_join(per_bldg_cases, by = join_by(site, week)) |> 
-  mutate(cases = if_else(is.na(cases), 0, cases)) |> 
-  print(n = 100)
+  mutate(cases = if_else(is.na(cases), 0, cases))
 
-rm(weeks)
+rm(study_period_weeks, per_bldg_cases, per_bldg_swabs)
 ```
 
 
-**Poisson GLM: Cases ~ positivity + (1|site)**
+**Poisson GLM w random intercepts: Cases ~ positivity + (1|site)**
 
 ```{r}
 per_bldg_model <- lme4::glmer(
@@ -1466,12 +1436,10 @@ per_bldg_model <- lme4::glmer(
   data = per_bldg_df,
   family = 'poisson'
 )
-VarCorr(per_bldg_model)
-
-# wald CIs
-broom.mixed::tidy(per_bldg_model, conf.int = T, conf.level = 0.95)
 broom.mixed::glance(per_bldg_model)
-broom.mixed::augment(per_bldg_model) |> view()
+# Wald CIs
+broom.mixed::tidy(per_bldg_model, conf.int = T, conf.level = 0.95)
+
 ```
 
 
@@ -1499,7 +1467,8 @@ points_df |>
 
 
 ```{r}
-broom.mixed::tidy(per_bldg_model, 'ran_vals',  conf.int = T, conf.level = 0.95, exponentiate = T) |> 
+broom.mixed::tidy(per_bldg_model, 'ran_vals', 
+                  conf.int = T, conf.level = 0.95) |> 
   ggplot(aes(y = level,
              x = estimate, xmin = conf.low, xmax = conf.high)) +
   geom_pointrange()
