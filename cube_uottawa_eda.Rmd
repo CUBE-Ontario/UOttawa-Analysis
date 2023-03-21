@@ -410,7 +410,6 @@ We probably want to summarise our swabs at the weekly (or biweekly?) level for c
 ```{r fig.width = 6, fig.height=6}
 ww_weekly_summary <-
   uottawa_ww |>
-  rename(site = source) |> 
   filter(sample_date >= min(swabs$date_swab),
          sample_date <= max(swabs$date_swab)) |> 
   mutate(week = get_date_week(sample_date)) |>
