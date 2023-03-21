@@ -92,25 +92,7 @@ lookup_ww <- tribble(
 
 # UOttawa waste water data from R. Delatolla
 uottawa_ww <-
-  readxl::read_excel(here::here('data/ww_university.xlsx')) |>
-  janitor::clean_names() |> 
-  mutate(sample_date = as_date(sample_date)) |> 
-  filter(
-    sample_date > '2021-09-15', 
-    sample_date < '2022-05-05',
-    !is.na(viral_copies_per_copies_pep_avg),
-    site != 'UO_RGN'
-    ) |> 
-  left_join(lookup_ww, by = c('site' = 'site_abbr')) |> 
-  mutate(
-    source =
-      source_name |>
-      str_remove('^Data - uOttawa - ') |>
-      str_remove('.xlsx$')
-  ) |> 
-  transmute(site,
-            sample_date, 
-            signal = viral_copies_per_copies_pep_avg)
+  read_csv(here::here('data/ww_university_clean.csv'))
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -428,6 +410,9 @@ We probably want to summarise our swabs at the weekly (or biweekly?) level for c
 ```{r fig.width = 6, fig.height=6}
 ww_weekly_summary <-
   uottawa_ww |>
+  rename(site = source) |> 
+  filter(sample_date >= min(swabs$date_swab),
+         sample_date <= max(swabs$date_swab)) |> 
   mutate(week = get_date_week(sample_date)) |>
   left_join(week_midpoint_date_lookup('2021-01-01', '2022-12-31'),
             by = 'week') |>
@@ -437,14 +422,14 @@ ww_weekly_summary <-
             signal_sd = sd(signal))
 
 plt_ww_weekly <- ww_weekly_summary |>
-  ggplot(aes(date,
-             signal_mean,
-             # ymin = signal_mean - signal_sd,
-             # ymax = signal_sd + signal_sd
-             )) +
+  ggplot(aes(date, signal_mean)) +
   geom_line() +
   geom_point() +
-  geom_point(data = uottawa_ww,
+  geom_point(data = uottawa_ww |> 
+                 filter(
+                   sample_date >= min(swabs$date_swab),
+                   sample_date <= max(swabs$date_swab)
+                   ),
              aes(as_date(sample_date), signal),
              size = 1, shape = 1, alpha = 0.5) +
   labs(x = 'Date', y = 'SARS-CoV-2 / PMMoV',

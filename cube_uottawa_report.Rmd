@@ -157,6 +157,7 @@ scale_x_study_dates <- function(){
         max(swabs_tidy$date_swab)
       ))
 }
+
 # get rid of x-axis for vertically stacked plots
 theme_no_x_labels <- function(){
   theme(
@@ -165,6 +166,7 @@ theme_no_x_labels <- function(){
     axis.text.x = element_blank()
   )
 }
+
 # get rid of y-axis for horizontally stacked plots
 theme_no_y_labels <- function(){
   theme(
@@ -173,6 +175,7 @@ theme_no_y_labels <- function(){
     axis.text.y = element_blank()
   )
 }
+
 # no minor grid and adjust spacing for multipanel
 theme_remove_grid <- function(){
   theme(
@@ -206,7 +209,7 @@ swabs_tidy <- swabs |>
 
 # lookup table for waste water site names
 lookup_ww <- tribble(
-  ~site_abbr, ~site,
+  ~site_abbr, ~site_name,
   'UO_AA',	'Annex Residence',
   'UO_FA',	'Faculty of Social Sciences',
   'UO_FT',	'Friel Residence',
@@ -216,27 +219,39 @@ lookup_ww <- tribble(
   'UO_TBT',	'Tabaret Hall'
 )
 
-# UOttawa waste water data from R. Delatolla
-uottawa_ww <-
-  readxl::read_excel(here::here('data/ww_university.xlsx')) |>
-  janitor::clean_names() |> 
-  mutate(sample_date = as_date(sample_date)) |> 
-  filter(
-    sample_date > '2021-09-15', 
-    sample_date < '2022-05-05',
-    !is.na(viral_copies_per_copies_pep_avg),
-    site != 'UO_RGN'
+
+# UOttawa waste water data from R. Delatolla to clean
+clean_ww_excel <- function(){
+  readxl::read_excel(here::here('data/ww_university.xlsx')) |> 
+    janitor::clean_names() |> 
+    transmute(
+      sample_date = as_date(sample_date),
+      site = source_name,
+      signal = viral_copies_per_copies_pep_avg
     ) |> 
-  left_join(lookup_ww, by = c('site' = 'site_abbr')) |> 
-  mutate(
-    source =
-      source_name |>
-      str_remove('^Data - uOttawa - ') |>
-      str_remove('.xlsx$')
-  ) |> 
-  transmute(site,
-            sample_date, 
-            signal = viral_copies_per_copies_pep_avg)
+    mutate(
+      site = str_remove_all(
+        site, 'Data\\s-\\suOttawa\\s-\\s|.xlsx'
+      ) |> 
+        str_to_upper()
+    ) |>
+    filter(site != 'UO_RGN', !is.na(signal)) 
+}
+
+clean_ww_excel() |> 
+  write_csv(here::here('data/ww_university_clean.csv'))
+
+rm(clean_ww_excel)
+
+# clean WW data close to study period, no RGN site.
+uottawa_ww <-
+  read_csv(here::here('data/ww_university_clean.csv'),
+           show_col_types = FALSE) |> 
+  filter(
+    sample_date > '2021-09-15',
+    sample_date < '2022-05-05'
+  ) |>
+  left_join(lookup_ww, by = c('site' = 'site_abbr')) 
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -342,14 +357,18 @@ swabs_biweekly <-
   swabs_tidy |>
   group_by(biweek) |> 
   positivity_summary() |> 
-  left_join(swabs_tidy |> group_by(biweek) |> co2_summary())
+  left_join(swabs_tidy |> group_by(biweek) |> co2_summary(),
+            by = join_by(biweek, n))
 
 # swabs biweekly summary by site  
 swabs_biweekly_by_site <- 
   swabs_tidy |>
   group_by(site, biweek) |> 
   positivity_summary() |> 
-  left_join(swabs_tidy |> group_by(site, biweek) |> co2_summary())
+  left_join(
+    swabs_tidy |> group_by(site, biweek) |> co2_summary(),
+    by = join_by(site, biweek, n)
+  )
 
 # UOttawa ww biweekly means
 uottawa_ww_biweekly <- 
@@ -400,7 +419,8 @@ wifi_biweek_sites <-
     n = n(),
     min = min(clients),
     mean = mean(clients),
-    max = max(clients)
+    max = max(clients),
+    .groups = 'drop'
   )
 
 # Map --------------------------------------------------
@@ -427,20 +447,39 @@ ww_coords <- tribble(
 
 figure_sites_map <- 
   leaflet::leaflet(swab_coords, width = 600, height = 330) |> 
-  leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) |> 
+  leaflet::addProviderTiles(
+    leaflet::providers$CartoDB.Positron
+  ) |> 
   leaflet::setView(lng = -75.6843, lat = 45.4235, zoom = 14) |> 
-  leaflet::addCircleMarkers(~lng, ~lat, label =  ~name, popup = ~name, 
-                            radius = 2, color = '#440099') |> 
+  leaflet::addCircleMarkers(
+    ~lng, ~lat, 
+    label = ~name, 
+    popup = ~name, 
+    radius = 2, 
+    color = '#440099'
+    ) |> 
   leaflet::addLabelOnlyMarkers(
-    ~lng, ~lat, label =  ~site, 
+    ~lng, ~lat, 
+    label =  ~site, 
     labelOptions = leaflet::labelOptions(
       noHide = T, direction = 'top', textOnly = T, 
     )) |> 
-  leaflet::addCircleMarkers(~lng, ~lat, label =  ~site, 
-                            radius = 2, color = '#440099') |> 
   leaflet::addCircleMarkers(
-    data = ww_coords, ~lng, ~lat, label =  ~name, popup =  ~name, 
-    radius = 4, color = '#f96999')
+    ~lng, 
+    ~lat,
+    label = ~site, 
+    radius = 2,
+    color = '#440099'
+    ) |> 
+  leaflet::addCircleMarkers(
+    data = ww_coords, 
+    ~lng,
+    ~lat, 
+    label =  ~name, 
+    popup =  ~name, 
+    radius = 4, 
+    color = '#f96999'
+    )
 
 
 # Results ----------------------------------------------------
@@ -1252,7 +1291,7 @@ rm(full_model_nb)
 </details>
 
 
-The negative binomial model (with extra parameter $\theta$) does not significantly improve the log likelihood compared to the poisson model (p > 0.05).
+The negative binomial model (with extra parameter $\theta$) does not significantly improve the model fit compared to the poisson model (p > 0.05) according to LRT.
 ```{r}
 library(lmtest)
 # poisson vs. nb models with main effects only
@@ -1287,7 +1326,7 @@ rm(full_model_nb_int)
 If we consider the ten biweekly observations where we have linked cases, swabs, and university WW data,
 
 ```{r}
-# backwards select with university ww (n=10 biweekly obs)
+# backwards select with university ww
 full_model_w_uni_ww <- glm(
   cases ~ .,
   data = df_mod_complete_obs |> select(-biweek), 
