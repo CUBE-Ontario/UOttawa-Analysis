@@ -1,0 +1,457 @@
+_time,Building,Clients
+Wed Apr  6 00:00:00 2022,RGN,1256
+Thu Apr  7 00:00:00 2022,RGN,998
+Tue Apr  5 00:00:00 2022,RGN,931
+Tue Apr  5 00:00:00 2022,CRX,857
+Wed Apr  6 00:00:00 2022,CRX,750
+Fri Apr  8 00:00:00 2022,CRX,743
+Fri Apr  8 00:00:00 2022,RGN,705
+Mon Apr 11 00:00:00 2022,CRX,685
+Wed Apr  6 00:00:00 2022,FSS,637
+Mon Apr  4 00:00:00 2022,CRX,626
+Thu Apr  7 00:00:00 2022,UniCenter,626
+Tue Apr  5 00:00:00 2022,Morisset,623
+Wed Apr  6 00:00:00 2022,Morisset,620
+Mon Apr 11 00:00:00 2022,Morisset,600
+Wed Apr  6 00:00:00 2022,UniCenter,591
+Thu Apr  7 00:00:00 2022,CRX,574
+Tue Apr  5 00:00:00 2022,UniCenter,574
+Thu Apr  7 00:00:00 2022,Morisset,538
+Tue Apr  5 00:00:00 2022,FSS,536
+Wed Apr  6 00:00:00 2022,SITE,533
+Fri Apr  8 00:00:00 2022,UniCenter,521
+Wed Apr  6 00:00:00 2022,DMS,518
+Mon Apr  4 00:00:00 2022,UniCenter,483
+Thu Apr  7 00:00:00 2022,FSS,477
+Fri Apr  8 00:00:00 2022,FSS,473
+Tue Apr  5 00:00:00 2022,Fauteux,469
+Fri Apr  8 00:00:00 2022,Morisset,468
+Tue Apr  5 00:00:00 2022,Tabaret,462
+Tue Apr  5 00:00:00 2022,SITE,450
+Mon Apr  4 00:00:00 2022,Morisset,438
+Fri Apr  8 00:00:00 2022,SITE,438
+Wed Apr  6 00:00:00 2022,Tabaret,425
+Sat Apr  9 00:00:00 2022,CRX,418
+Tue Apr  5 00:00:00 2022,DMS,415
+Thu Apr  7 00:00:00 2022,DMS,414
+Mon Apr 11 00:00:00 2022,UniCenter,400
+Mon Apr 11 00:00:00 2022,FSS,396
+Sat Apr  9 00:00:00 2022,Morisset,381
+Mon Apr 11 00:00:00 2022,RGN,360
+Tue Apr  5 00:00:00 2022,STEM,359
+Thu Apr  7 00:00:00 2022,SITE,355
+Thu Apr  7 00:00:00 2022,Fauteux,353
+Thu Apr  7 00:00:00 2022,STEM,348
+Mon Apr  4 00:00:00 2022,RGN,347
+Wed Apr  6 00:00:00 2022,STEM,340
+Fri Apr  8 00:00:00 2022,Fauteux,322
+Thu Apr  7 00:00:00 2022,Tabaret,320
+Wed Apr  6 00:00:00 2022,Fauteux,316
+Mon Apr 11 00:00:00 2022,SITE,313
+Fri Apr  8 00:00:00 2022,DMS,312
+Tue Apr  5 00:00:00 2022,CBY,307
+Wed Apr  6 00:00:00 2022,CBY,307
+Thu Apr  7 00:00:00 2022,MontPetit,306
+Mon Apr  4 00:00:00 2022,SITE,301
+Fri Apr  8 00:00:00 2022,STEM,296
+Sat Apr  9 00:00:00 2022,UniCenter,291
+Wed Apr  6 00:00:00 2022,Vanier,287
+Thu Apr  7 00:00:00 2022,CBY,276
+Tue Apr  5 00:00:00 2022,LMX,266
+Fri Apr  8 00:00:00 2022,CBY,265
+Mon Apr  4 00:00:00 2022,DMS,258
+Thu Apr  7 00:00:00 2022,bioScience,253
+Mon Apr 11 00:00:00 2022,Fauteux,252
+Mon Apr  4 00:00:00 2022,FSS,248
+Wed Apr  6 00:00:00 2022,Marion,244
+Fri Apr  8 00:00:00 2022,Tabaret,242
+Tue Apr  5 00:00:00 2022,Vanier,241
+Wed Apr  6 00:00:00 2022,MontPetit,233
+Wed Apr  6 00:00:00 2022,LMX,232
+Tue Apr  5 00:00:00 2022,bioScience,231
+Thu Apr  7 00:00:00 2022,Vanier,226
+Sat Apr  9 00:00:00 2022,Fauteux,220
+Tue Apr  5 00:00:00 2022,SPX,212
+Thu Apr  7 00:00:00 2022,Marion,209
+Tue Apr  5 00:00:00 2022,Diorio,208
+Mon Apr  4 00:00:00 2022,Fauteux,207
+Fri Apr  8 00:00:00 2022,SPX,207
+Sat Apr  9 00:00:00 2022,SITE,198
+Mon Apr 11 00:00:00 2022,CBY,195
+Mon Apr 11 00:00:00 2022,LMX,194
+Tue Apr  5 00:00:00 2022,MontPetit,190
+Fri Apr  8 00:00:00 2022,Diorio,189
+Wed Apr  6 00:00:00 2022,SPX,188
+Fri Apr  8 00:00:00 2022,Vanier,188
+Wed Apr  6 00:00:00 2022,bioScience,188
+Tue Apr  5 00:00:00 2022,ARC,187
+Tue Apr  5 00:00:00 2022,Marion,187
+Sat Apr  9 00:00:00 2022,FSS,185
+Sat Apr  9 00:00:00 2022,SPX,185
+Mon Apr  4 00:00:00 2022,CBY,182
+Thu Apr  7 00:00:00 2022,LMX,181
+Wed Apr  6 00:00:00 2022,ARC,180
+Thu Apr  7 00:00:00 2022,Diorio,180
+Wed Apr  6 00:00:00 2022,Diorio,179
+Thu Apr  7 00:00:00 2022,SPX,179
+Wed Apr  6 00:00:00 2022,Arts,174
+Thu Apr  7 00:00:00 2022,ARC,171
+Mon Apr 11 00:00:00 2022,STEM,171
+Fri Apr  8 00:00:00 2022,LMX,170
+Mon Apr 11 00:00:00 2022,Morriset,170
+Sat Apr  9 00:00:00 2022,RGN,169
+Fri Apr  8 00:00:00 2022,ARC,163
+Fri Apr  8 00:00:00 2022,Marion,163
+Fri Apr  8 00:00:00 2022,LPR,152
+Fri Apr  8 00:00:00 2022,bioScience,149
+Mon Apr 11 00:00:00 2022,DMS,146
+Wed Apr  6 00:00:00 2022,LPR,144
+Fri Apr  8 00:00:00 2022,MontPetit,136
+Tue Apr  5 00:00:00 2022,Arts,133
+Mon Apr 11 00:00:00 2022,Tabaret,133
+Mon Apr 11 00:00:00 2022,ARC,132
+Thu Apr  7 00:00:00 2022,LPR,132
+Wed Apr  6 00:00:00 2022,Morriset,132
+Tue Apr  5 00:00:00 2022,LPR,130
+Mon Apr  4 00:00:00 2022,STEM,130
+Mon Apr 11 00:00:00 2022,SPX,129
+Thu Apr  7 00:00:00 2022,Arts,126
+Tue Apr  5 00:00:00 2022,Simard,126
+Sat Apr  9 00:00:00 2022,STEM,125
+Wed Apr  6 00:00:00 2022,Perez,124
+Mon Apr 11 00:00:00 2022,Vanier,121
+Tue Apr  5 00:00:00 2022,Perez,119
+Mon Apr 11 00:00:00 2022,Diorio,118
+Mon Apr  4 00:00:00 2022,SPX,117
+Fri Apr  8 00:00:00 2022,Morriset,115
+Sun Apr 10 00:00:00 2022,RGN,115
+Thu Apr  7 00:00:00 2022,Morriset,114
+Mon Apr  4 00:00:00 2022,Vanier,113
+Wed Apr  6 00:00:00 2022,CAREG,112
+Tue Apr  5 00:00:00 2022,CAREG,111
+Wed Apr  6 00:00:00 2022,Simard,111
+Thu Apr  7 00:00:00 2022,CAREG,110
+Sat Apr  9 00:00:00 2022,CBY,109
+Fri Apr  8 00:00:00 2022,Simard,108
+Thu Apr  7 00:00:00 2022,Perez,107
+Mon Apr 11 00:00:00 2022,Marion,104
+Fri Apr  8 00:00:00 2022,Perez,104
+Fri Apr  8 00:00:00 2022,CAREG,103
+Mon Apr  4 00:00:00 2022,MontPetit,101
+Wed Apr  6 00:00:00 2022,Thompson,100
+Tue Apr  5 00:00:00 2022,Thompson,99
+Mon Apr  4 00:00:00 2022,ARC,98
+Mon Apr 11 00:00:00 2022,bioScience,96
+Mon Apr  4 00:00:00 2022,Arts,93
+Tue Apr  5 00:00:00 2022,Morriset,93
+Wed Apr  6 00:00:00 2022,100 Laurier,91
+Thu Apr  7 00:00:00 2022,LEES BLOCK E,91
+Sat Apr  9 00:00:00 2022,DMS,90
+Mon Apr  4 00:00:00 2022,Perez,90
+Mon Apr  4 00:00:00 2022,Diorio,89
+Mon Apr 11 00:00:00 2022,MontPetit,88
+Sun Apr 10 00:00:00 2022,CBY,84
+Tue Apr  5 00:00:00 2022,LEES BLOCK E,84
+Thu Apr  7 00:00:00 2022,Thompson,84
+Tue Apr  5 00:00:00 2022,100 Laurier,83
+Mon Apr  4 00:00:00 2022,LMX,82
+Mon Apr  4 00:00:00 2022,Morriset,82
+Tue Apr  5 00:00:00 2022,LEES BLOCK A,80
+Thu Apr  7 00:00:00 2022,Simard,80
+Mon Apr  4 00:00:00 2022,Tabaret,79
+Wed Apr  6 00:00:00 2022,MCU,78
+Mon Apr  4 00:00:00 2022,Marion,78
+Wed Apr  6 00:00:00 2022,LEES BLOCK E,77
+Sat Apr  9 00:00:00 2022,LMX,76
+Fri Apr  8 00:00:00 2022,100 Laurier,74
+Thu Apr  7 00:00:00 2022,MCU,74
+Sun Apr 10 00:00:00 2022,UniCenter,74
+Fri Apr  8 00:00:00 2022,Arts,73
+Tue Apr  5 00:00:00 2022,MCU,73
+Mon Apr 11 00:00:00 2022,Perez,72
+Fri Apr  8 00:00:00 2022,MCU,70
+Sat Apr  9 00:00:00 2022,MontPetit,64
+Sat Apr  9 00:00:00 2022,Morriset,63
+Tue Apr  5 00:00:00 2022,Hagen,62
+Wed Apr  6 00:00:00 2022,Hagen,62
+Sat Apr  9 00:00:00 2022,Vanier,62
+Sun Apr 10 00:00:00 2022,ARC,61
+Mon Apr 11 00:00:00 2022,MCU,60
+Wed Apr  6 00:00:00 2022,1 Stewart,59
+Fri Apr  8 00:00:00 2022,Thompson,59
+Thu Apr  7 00:00:00 2022,1 Stewart,58
+Wed Apr  6 00:00:00 2022,KED,58
+Thu Apr  7 00:00:00 2022,100 Laurier,57
+Thu Apr  7 00:00:00 2022,LEES BLOCK A,57
+Wed Apr  6 00:00:00 2022,Seraphin Marion,57
+Fri Apr  8 00:00:00 2022,Hagen,56
+Fri Apr  8 00:00:00 2022,KED,56
+Sat Apr  9 00:00:00 2022,Perez,56
+Tue Apr  5 00:00:00 2022,Seraphin Marion,56
+Tue Apr  5 00:00:00 2022,KED,55
+Mon Apr  4 00:00:00 2022,LEES BLOCK A,55
+Sun Apr 10 00:00:00 2022,STEM,55
+Fri Apr  8 00:00:00 2022,LEES BLOCK E,54
+Mon Apr 11 00:00:00 2022,CAREG,53
+Sat Apr  9 00:00:00 2022,EMBA,52
+Thu Apr  7 00:00:00 2022,Hagen,52
+Sun Apr 10 00:00:00 2022,Morisset,52
+Sat Apr  9 00:00:00 2022,Tabaret,52
+Mon Apr  4 00:00:00 2022,bioScience,50
+Sun Apr 10 00:00:00 2022,SITE,49
+Mon Apr  4 00:00:00 2022,Thompson,49
+Mon Apr 11 00:00:00 2022,LPR,48
+Sat Apr  9 00:00:00 2022,ARC,47
+Mon Apr 11 00:00:00 2022,Thompson,47
+Tue Apr  5 00:00:00 2022,1 Stewart,46
+Thu Apr  7 00:00:00 2022,KED,46
+Tue Apr  5 00:00:00 2022,Brooks,45
+Sun Apr 10 00:00:00 2022,Fauteux,45
+Wed Apr  6 00:00:00 2022,600 Peter Morand,44
+Mon Apr 11 00:00:00 2022,Arts,43
+Sun Apr 10 00:00:00 2022,SPX,43
+Mon Apr 11 00:00:00 2022,100 Laurier,42
+Tue Apr  5 00:00:00 2022,600 Peter Morand,41
+Sat Apr  9 00:00:00 2022,Diorio,41
+Mon Apr 11 00:00:00 2022,Hagen,41
+Mon Apr  4 00:00:00 2022,Simard,41
+Fri Apr  8 00:00:00 2022,1 Stewart,40
+Mon Apr  4 00:00:00 2022,CAREG,40
+Sun Apr 10 00:00:00 2022,CRX,40
+Sun Apr 10 00:00:00 2022,DMS,40
+Sat Apr  9 00:00:00 2022,Marion,40
+Thu Apr  7 00:00:00 2022,Seraphin Marion,40
+Mon Apr  4 00:00:00 2022,100 Laurier,39
+Mon Apr 11 00:00:00 2022,LEES BLOCK E,39
+Sun Apr 10 00:00:00 2022,FSS,38
+Mon Apr 11 00:00:00 2022,KED,37
+Sun Apr 10 00:00:00 2022,Marion,37
+Thu Apr  7 00:00:00 2022,600 Peter Morand,36
+Sun Apr 10 00:00:00 2022,CAREG,36
+Fri Apr  8 00:00:00 2022,600 Peter Morand,35
+Sat Apr  9 00:00:00 2022,CAREG,35
+Sat Apr  9 00:00:00 2022,850 Peter Morand,34
+Fri Apr  8 00:00:00 2022,EMBA,34
+Mon Apr  4 00:00:00 2022,KED,34
+Sat Apr  9 00:00:00 2022,bioScience,34
+Sat Apr  9 00:00:00 2022,KED,33
+Mon Apr  4 00:00:00 2022,MCU,33
+Sat Apr  9 00:00:00 2022,Thompson,33
+Wed Apr  6 00:00:00 2022,Brooks,32
+Mon Apr 11 00:00:00 2022,Simard,32
+Thu Apr  7 00:00:00 2022,Brooks,30
+Fri Apr  8 00:00:00 2022,Seraphin Marion,30
+Sun Apr 10 00:00:00 2022,Tabaret,30
+Sun Apr 10 00:00:00 2022,bioScience,30
+Fri Apr  8 00:00:00 2022,Brooks,29
+Tue Apr  5 00:00:00 2022,EMBA,29
+Sat Apr  9 00:00:00 2022,LEES BLOCK A,29
+Sun Apr 10 00:00:00 2022,LPR,29
+Wed Apr  6 00:00:00 2022,200 Wilbrod,28
+Sun Apr 10 00:00:00 2022,Diorio,28
+Sun Apr 10 00:00:00 2022,Vanier,28
+Sun Apr 10 00:00:00 2022,850 Peter Morand,27
+Thu Apr  7 00:00:00 2022,Academic Hall,27
+Sun Apr 10 00:00:00 2022,MontPetit,27
+Mon Apr 11 00:00:00 2022,Seraphin Marion,27
+Sat Apr  9 00:00:00 2022,100 Laurier,26
+Mon Apr 11 00:00:00 2022,850 Peter Morand,26
+Fri Apr  8 00:00:00 2022,LEES BLOCK A,26
+Mon Apr  4 00:00:00 2022,LEES BLOCK E,26
+Mon Apr  4 00:00:00 2022,LPR,26
+Thu Apr  7 00:00:00 2022,535 Legget,25
+Wed Apr  6 00:00:00 2022,AlumniHouse,25
+Sat Apr  9 00:00:00 2022,LPR,25
+Sat Apr  9 00:00:00 2022,MCU,25
+Wed Apr  6 00:00:00 2022,850 Peter Morand,24
+Tue Apr  5 00:00:00 2022,535 Legget,23
+Mon Apr 11 00:00:00 2022,Brooks,23
+Wed Apr  6 00:00:00 2022,LEES BLOCK A,23
+Mon Apr  4 00:00:00 2022,Hagen,22
+Mon Apr 11 00:00:00 2022,1 Stewart,21
+Fri Apr  8 00:00:00 2022,Academic Hall,21
+Sat Apr  9 00:00:00 2022,Hagen,21
+Sat Apr  9 00:00:00 2022,LEES BLOCK E,21
+Sat Apr  9 00:00:00 2022,Simard,21
+Tue Apr  5 00:00:00 2022,AlumniHouse,20
+Sat Apr  9 00:00:00 2022,Seraphin Marion,20
+Thu Apr  7 00:00:00 2022,850 Peter Morand,19
+Wed Apr  6 00:00:00 2022,Academic Hall,19
+Sat Apr  9 00:00:00 2022,Arts,19
+Wed Apr  6 00:00:00 2022,Stewart,19
+Sun Apr 10 00:00:00 2022,Thompson,19
+Sat Apr  9 00:00:00 2022,Academic Hall,18
+Fri Apr  8 00:00:00 2022,AlumniHouse,18
+Sun Apr 10 00:00:00 2022,KED,18
+Thu Apr  7 00:00:00 2022,Sacre Coeur,18
+Mon Apr  4 00:00:00 2022,600 Peter Morand,17
+Wed Apr  6 00:00:00 2022,EMBA,17
+Sun Apr 10 00:00:00 2022,LEES BLOCK E,17
+Wed Apr  6 00:00:00 2022,535 Legget,16
+Sun Apr 10 00:00:00 2022,Simard,16
+Tue Apr  5 00:00:00 2022,Academic Hall,15
+Tue Apr  5 00:00:00 2022,Copernicus,15
+Sun Apr 10 00:00:00 2022,Hagen,15
+Tue Apr  5 00:00:00 2022,850 Peter Morand,14
+Fri Apr  8 00:00:00 2022,850 Peter Morand,14
+Mon Apr 11 00:00:00 2022,AlumniHouse,14
+Mon Apr  4 00:00:00 2022,Brooks,14
+Wed Apr  6 00:00:00 2022,Copernicus,14
+Thu Apr  7 00:00:00 2022,Copernicus,14
+Tue Apr  5 00:00:00 2022,GradHouse,14
+Sun Apr 10 00:00:00 2022,MCU,14
+Fri Apr  8 00:00:00 2022,Sacre Coeur,14
+Thu Apr  7 00:00:00 2022,Stewart,14
+Mon Apr 11 00:00:00 2022,Academic Hall,13
+Thu Apr  7 00:00:00 2022,AlumniHouse,13
+Sat Apr  9 00:00:00 2022,Brooks,13
+Sun Apr 10 00:00:00 2022,Perez,13
+Tue Apr  5 00:00:00 2022,316 Rideau,12
+Sat Apr  9 00:00:00 2022,600 Peter Morand,12
+Mon Apr 11 00:00:00 2022,600 Peter Morand,12
+Tue Apr  5 00:00:00 2022,Sacre Coeur,12
+Tue Apr  5 00:00:00 2022,Stewart,12
+Mon Apr  4 00:00:00 2022,AlumniHouse,11
+Sat Apr  9 00:00:00 2022,AlumniHouse,11
+Fri Apr  8 00:00:00 2022,Copernicus,11
+Mon Apr 11 00:00:00 2022,Copernicus,11
+Wed Apr  6 00:00:00 2022,GradHouse,11
+Mon Apr  4 00:00:00 2022,Seraphin Marion,11
+Sat Apr  9 00:00:00 2022,1 Stewart,10
+Sun Apr 10 00:00:00 2022,Brooks,10
+Thu Apr  7 00:00:00 2022,EMBA,10
+Sun Apr 10 00:00:00 2022,LMX,10
+Wed Apr  6 00:00:00 2022,Sacre Coeur,10
+Tue Apr  5 00:00:00 2022,180 Waller,9
+Fri Apr  8 00:00:00 2022,535 Legget,9
+Mon Apr  4 00:00:00 2022,Copernicus,9
+Sat Apr  9 00:00:00 2022,Copernicus,9
+Mon Apr  4 00:00:00 2022,EMBA,9
+Mon Apr 11 00:00:00 2022,EMBA,9
+Mon Apr 11 00:00:00 2022,GradHouse,9
+Sat Apr  9 00:00:00 2022,Henderson,9
+Mon Apr  4 00:00:00 2022,Sacre Coeur,9
+Fri Apr  8 00:00:00 2022,Stewart,9
+Thu Apr  7 00:00:00 2022,316 Rideau,8
+Mon Apr 11 00:00:00 2022,535 Legget,8
+Mon Apr  4 00:00:00 2022,GradHouse,8
+Fri Apr  8 00:00:00 2022,GradHouse,8
+Tue Apr  5 00:00:00 2022,Henderson,8
+Mon Apr  4 00:00:00 2022,1 Stewart,7
+Sun Apr 10 00:00:00 2022,100 Laurier,7
+Fri Apr  8 00:00:00 2022,200 Wilbrod,7
+Sat Apr  9 00:00:00 2022,200 Wilbrod,7
+Fri Apr  8 00:00:00 2022,316 Rideau,7
+Sun Apr 10 00:00:00 2022,Arts,7
+Thu Apr  7 00:00:00 2022,GradHouse,7
+Thu Apr  7 00:00:00 2022,Henderson,7
+Fri Apr  8 00:00:00 2022,Henderson,7
+Tue Apr  5 00:00:00 2022,Marchand,7
+Wed Apr  6 00:00:00 2022,Marchand,7
+Fri Apr  8 00:00:00 2022,Marchand,7
+Sat Apr  9 00:00:00 2022,Sacre Coeur,7
+Sun Apr 10 00:00:00 2022,Seraphin Marion,7
+Wed Apr  6 00:00:00 2022,180 Waller,6
+Tue Apr  5 00:00:00 2022,200 Wilbrod,6
+Thu Apr  7 00:00:00 2022,200 Wilbrod,6
+Mon Apr 11 00:00:00 2022,200 Wilbrod,6
+Sun Apr 10 00:00:00 2022,600 Peter Morand,6
+Tue Apr  5 00:00:00 2022,Gendron,6
+Thu Apr  7 00:00:00 2022,Gendron,6
+Sat Apr  9 00:00:00 2022,GradHouse,6
+Mon Apr  4 00:00:00 2022,Henderson,6
+Wed Apr  6 00:00:00 2022,Henderson,6
+Mon Apr 11 00:00:00 2022,LEES BLOCK A,6
+Thu Apr  7 00:00:00 2022,Marchand,6
+Sat Apr  9 00:00:00 2022,Stewart,6
+Thu Apr  7 00:00:00 2022,180 Waller,5
+Fri Apr  8 00:00:00 2022,180 Waller,5
+Sat Apr  9 00:00:00 2022,180 Waller,5
+Mon Apr  4 00:00:00 2022,200 Wilbrod,5
+Mon Apr 11 00:00:00 2022,316 Rideau,5
+Mon Apr  4 00:00:00 2022,850 Peter Morand,5
+Sun Apr 10 00:00:00 2022,AlumniHouse,5
+Fri Apr  8 00:00:00 2022,Gendron,5
+Mon Apr 11 00:00:00 2022,Sacre Coeur,5
+Sun Apr 10 00:00:00 2022,1 Stewart,4
+Mon Apr  4 00:00:00 2022,180 Waller,4
+Sat Apr  9 00:00:00 2022,316 Rideau,4
+Mon Apr  4 00:00:00 2022,535 Legget,4
+Sun Apr 10 00:00:00 2022,535 Legget,4
+Sun Apr 10 00:00:00 2022,Academic Hall,4
+Sun Apr 10 00:00:00 2022,Copernicus,4
+Sun Apr 10 00:00:00 2022,EMBA,4
+Sun Apr 10 00:00:00 2022,LEES BLOCK A,4
+Mon Apr  4 00:00:00 2022,Marchand,4
+Mon Apr 11 00:00:00 2022,Marchand,4
+Mon Apr  4 00:00:00 2022,Stewart,4
+Mon Apr 11 00:00:00 2022,Stewart,4
+Tue Apr  5 00:00:00 2022,1 Nicholas,3
+Wed Apr  6 00:00:00 2022,1 Nicholas,3
+Thu Apr  7 00:00:00 2022,1 Nicholas,3
+Fri Apr  8 00:00:00 2022,1 Nicholas,3
+Sat Apr  9 00:00:00 2022,1 Nicholas,3
+Mon Apr 11 00:00:00 2022,180 Waller,3
+Mon Apr  4 00:00:00 2022,316 Rideau,3
+Wed Apr  6 00:00:00 2022,316 Rideau,3
+Sat Apr  9 00:00:00 2022,535 Legget,3
+Mon Apr  4 00:00:00 2022,Academic Hall,3
+Sun Apr 10 00:00:00 2022,GradHouse,3
+Sun Apr 10 00:00:00 2022,Stewart,3
+Mon Apr  4 00:00:00 2022,1 Nicholas,2
+Sun Apr 10 00:00:00 2022,1 Nicholas,2
+Mon Apr 11 00:00:00 2022,1 Nicholas,2
+Sun Apr 10 00:00:00 2022,180 Waller,2
+Sun Apr 10 00:00:00 2022,200 Wilbrod,2
+Mon Apr  4 00:00:00 2022,Gendron,2
+Wed Apr  6 00:00:00 2022,Gendron,2
+Sun Apr 10 00:00:00 2022,Gendron,2
+Mon Apr 11 00:00:00 2022,Gendron,2
+Sun Apr 10 00:00:00 2022,Henderson,2
+Mon Apr 11 00:00:00 2022,Henderson,2
+Sat Apr  9 00:00:00 2022,Marchand,2
+Sun Apr 10 00:00:00 2022,Sacre Coeur,2
+Sun Apr 10 00:00:00 2022,316 Rideau,1
+Wed Apr  6 00:00:00 2022,LEES BLOCK C,1
+Sun Apr 10 00:00:00 2022,Marchand,1
+Sat Apr  9 00:00:00 2022,Gendron,0
+Mon Apr  4 00:00:00 2022,LEES BLOCK B,0
+Tue Apr  5 00:00:00 2022,LEES BLOCK B,0
+Wed Apr  6 00:00:00 2022,LEES BLOCK B,0
+Thu Apr  7 00:00:00 2022,LEES BLOCK B,0
+Fri Apr  8 00:00:00 2022,LEES BLOCK B,0
+Sat Apr  9 00:00:00 2022,LEES BLOCK B,0
+Sun Apr 10 00:00:00 2022,LEES BLOCK B,0
+Mon Apr 11 00:00:00 2022,LEES BLOCK B,0
+Mon Apr  4 00:00:00 2022,LEES BLOCK C,0
+Tue Apr  5 00:00:00 2022,LEES BLOCK C,0
+Thu Apr  7 00:00:00 2022,LEES BLOCK C,0
+Fri Apr  8 00:00:00 2022,LEES BLOCK C,0
+Sat Apr  9 00:00:00 2022,LEES BLOCK C,0
+Sun Apr 10 00:00:00 2022,LEES BLOCK C,0
+Mon Apr 11 00:00:00 2022,LEES BLOCK C,0
+Mon Apr  4 00:00:00 2022,LEES BLOCK D,0
+Tue Apr  5 00:00:00 2022,LEES BLOCK D,0
+Wed Apr  6 00:00:00 2022,LEES BLOCK D,0
+Thu Apr  7 00:00:00 2022,LEES BLOCK D,0
+Fri Apr  8 00:00:00 2022,LEES BLOCK D,0
+Sat Apr  9 00:00:00 2022,LEES BLOCK D,0
+Sun Apr 10 00:00:00 2022,LEES BLOCK D,0
+Mon Apr 11 00:00:00 2022,LEES BLOCK D,0
+Mon Apr  4 00:00:00 2022,Leblanc,0
+Tue Apr  5 00:00:00 2022,Leblanc,0
+Wed Apr  6 00:00:00 2022,Leblanc,0
+Thu Apr  7 00:00:00 2022,Leblanc,0
+Fri Apr  8 00:00:00 2022,Leblanc,0
+Sat Apr  9 00:00:00 2022,Leblanc,0
+Sun Apr 10 00:00:00 2022,Leblanc,0
+Mon Apr 11 00:00:00 2022,Leblanc,0
+Sun Apr 10 00:00:00 2022,Morriset,0
+Mon Apr  4 00:00:00 2022,Polytek,0
+Tue Apr  5 00:00:00 2022,Polytek,0
+Wed Apr  6 00:00:00 2022,Polytek,0
+Thu Apr  7 00:00:00 2022,Polytek,0
+Fri Apr  8 00:00:00 2022,Polytek,0
+Sat Apr  9 00:00:00 2022,Polytek,0
+Sun Apr 10 00:00:00 2022,Polytek,0
+Mon Apr 11 00:00:00 2022,Polytek,0

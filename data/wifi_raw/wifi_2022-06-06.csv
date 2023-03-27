@@ -1,0 +1,457 @@
+_time,Building,Clients
+Fri Jun  3 00:00:00 2022,RGN,1196
+Wed Jun  1 00:00:00 2022,RGN,1010
+Tue May 31 00:00:00 2022,RGN,948
+Mon Jun  6 00:00:00 2022,RGN,744
+Thu Jun  2 00:00:00 2022,RGN,730
+Wed Jun  1 00:00:00 2022,Tabaret,533
+Fri Jun  3 00:00:00 2022,CBY,500
+Fri Jun  3 00:00:00 2022,FSS,482
+Tue May 31 00:00:00 2022,Tabaret,477
+Fri Jun  3 00:00:00 2022,Tabaret,474
+Fri Jun  3 00:00:00 2022,STEM,460
+Thu Jun  2 00:00:00 2022,Tabaret,407
+Mon Jun  6 00:00:00 2022,DMS,405
+Wed Jun  1 00:00:00 2022,DMS,388
+Mon Jun  6 00:00:00 2022,Tabaret,347
+Tue May 31 00:00:00 2022,CBY,343
+Wed Jun  1 00:00:00 2022,CBY,338
+Fri Jun  3 00:00:00 2022,DMS,326
+Mon Jun  6 00:00:00 2022,CBY,322
+Tue May 31 00:00:00 2022,DMS,305
+Fri Jun  3 00:00:00 2022,Diorio,302
+Wed Jun  1 00:00:00 2022,FSS,302
+Thu Jun  2 00:00:00 2022,CBY,294
+Thu Jun  2 00:00:00 2022,DMS,294
+Tue May 31 00:00:00 2022,Fauteux,293
+Fri Jun  3 00:00:00 2022,UniCenter,282
+Fri Jun  3 00:00:00 2022,ARC,278
+Fri Jun  3 00:00:00 2022,CRX,278
+Tue May 31 00:00:00 2022,CRX,272
+Tue May 31 00:00:00 2022,FSS,262
+Thu Jun  2 00:00:00 2022,FSS,251
+Fri Jun  3 00:00:00 2022,Vanier,250
+Fri Jun  3 00:00:00 2022,Fauteux,246
+Thu Jun  2 00:00:00 2022,Vanier,246
+Fri Jun  3 00:00:00 2022,bioScience,244
+Fri Jun  3 00:00:00 2022,Morisset,242
+Mon May 30 00:00:00 2022,RGN,230
+Wed Jun  1 00:00:00 2022,Vanier,229
+Tue May 31 00:00:00 2022,MontPetit,226
+Wed Jun  1 00:00:00 2022,Fauteux,223
+Thu Jun  2 00:00:00 2022,CRX,222
+Mon Jun  6 00:00:00 2022,FSS,221
+Wed Jun  1 00:00:00 2022,STEM,221
+Fri Jun  3 00:00:00 2022,SITE,220
+Wed Jun  1 00:00:00 2022,CRX,216
+Fri Jun  3 00:00:00 2022,LPR,216
+Tue May 31 00:00:00 2022,Morisset,215
+Fri Jun  3 00:00:00 2022,SPX,214
+Wed Jun  1 00:00:00 2022,Morisset,208
+Mon Jun  6 00:00:00 2022,STEM,208
+Tue May 31 00:00:00 2022,ARC,207
+Tue May 31 00:00:00 2022,Diorio,207
+Thu Jun  2 00:00:00 2022,STEM,206
+Wed Jun  1 00:00:00 2022,UniCenter,206
+Fri Jun  3 00:00:00 2022,Marion,204
+Tue May 31 00:00:00 2022,STEM,204
+Thu Jun  2 00:00:00 2022,Fauteux,201
+Fri Jun  3 00:00:00 2022,MontPetit,200
+Mon Jun  6 00:00:00 2022,Morisset,196
+Wed Jun  1 00:00:00 2022,ARC,193
+Wed Jun  1 00:00:00 2022,Diorio,192
+Wed Jun  1 00:00:00 2022,MontPetit,190
+Thu Jun  2 00:00:00 2022,Morisset,187
+Mon May 30 00:00:00 2022,DMS,186
+Thu Jun  2 00:00:00 2022,Arts,185
+Thu Jun  2 00:00:00 2022,ARC,183
+Mon Jun  6 00:00:00 2022,ARC,183
+Mon Jun  6 00:00:00 2022,Diorio,183
+Tue May 31 00:00:00 2022,UniCenter,182
+Tue May 31 00:00:00 2022,SITE,177
+Thu Jun  2 00:00:00 2022,Diorio,176
+Tue May 31 00:00:00 2022,Arts,175
+Tue May 31 00:00:00 2022,Vanier,174
+Thu Jun  2 00:00:00 2022,UniCenter,171
+Mon Jun  6 00:00:00 2022,Vanier,171
+Wed Jun  1 00:00:00 2022,bioScience,169
+Fri Jun  3 00:00:00 2022,CAREG,168
+Mon Jun  6 00:00:00 2022,CRX,168
+Mon May 30 00:00:00 2022,Morisset,168
+Tue May 31 00:00:00 2022,bioScience,167
+Tue May 31 00:00:00 2022,SPX,163
+Thu Jun  2 00:00:00 2022,bioScience,161
+Mon May 30 00:00:00 2022,CBY,160
+Wed Jun  1 00:00:00 2022,LPR,156
+Wed Jun  1 00:00:00 2022,SPX,153
+Wed Jun  1 00:00:00 2022,SITE,150
+Wed Jun  1 00:00:00 2022,Arts,147
+Mon Jun  6 00:00:00 2022,SITE,147
+Mon Jun  6 00:00:00 2022,bioScience,147
+Fri Jun  3 00:00:00 2022,850 Peter Morand,146
+Mon May 30 00:00:00 2022,CRX,143
+Tue May 31 00:00:00 2022,LPR,142
+Tue May 31 00:00:00 2022,Marion,139
+Wed Jun  1 00:00:00 2022,Marion,139
+Mon Jun  6 00:00:00 2022,Fauteux,138
+Thu Jun  2 00:00:00 2022,SITE,136
+Tue May 31 00:00:00 2022,CAREG,131
+Mon Jun  6 00:00:00 2022,SPX,131
+Mon Jun  6 00:00:00 2022,LPR,129
+Mon May 30 00:00:00 2022,SITE,125
+Mon Jun  6 00:00:00 2022,UniCenter,123
+Fri Jun  3 00:00:00 2022,Arts,120
+Wed Jun  1 00:00:00 2022,CAREG,120
+Thu Jun  2 00:00:00 2022,Marion,120
+Thu Jun  2 00:00:00 2022,SPX,120
+Thu Jun  2 00:00:00 2022,MontPetit,116
+Wed Jun  1 00:00:00 2022,LMX,115
+Mon Jun  6 00:00:00 2022,Marion,115
+Sun Jun  5 00:00:00 2022,CBY,114
+Sun Jun  5 00:00:00 2022,CRX,114
+Sat Jun  4 00:00:00 2022,CRX,112
+Thu Jun  2 00:00:00 2022,LPR,112
+Sat Jun  4 00:00:00 2022,CBY,110
+Mon May 30 00:00:00 2022,ARC,108
+Mon May 30 00:00:00 2022,Fauteux,108
+Fri Jun  3 00:00:00 2022,Simard,108
+Mon Jun  6 00:00:00 2022,MontPetit,107
+Wed Jun  1 00:00:00 2022,LEES BLOCK E,106
+Mon Jun  6 00:00:00 2022,Simard,106
+Sat Jun  4 00:00:00 2022,LMX,103
+Fri Jun  3 00:00:00 2022,LMX,102
+Wed Jun  1 00:00:00 2022,Simard,102
+Sat Jun  4 00:00:00 2022,RGN,101
+Mon May 30 00:00:00 2022,FSS,100
+Tue May 31 00:00:00 2022,LMX,100
+Sun Jun  5 00:00:00 2022,RGN,98
+Thu Jun  2 00:00:00 2022,CAREG,97
+Mon May 30 00:00:00 2022,MontPetit,94
+Mon May 30 00:00:00 2022,SPX,92
+Tue May 31 00:00:00 2022,Simard,92
+Mon Jun  6 00:00:00 2022,CAREG,89
+Tue May 31 00:00:00 2022,LEES BLOCK A,88
+Fri Jun  3 00:00:00 2022,LEES BLOCK E,86
+Tue May 31 00:00:00 2022,LEES BLOCK E,85
+Sat Jun  4 00:00:00 2022,SPX,83
+Thu Jun  2 00:00:00 2022,Simard,81
+Mon May 30 00:00:00 2022,Diorio,80
+Sat Jun  4 00:00:00 2022,Morisset,78
+Sun Jun  5 00:00:00 2022,SPX,78
+Sat Jun  4 00:00:00 2022,MontPetit,77
+Mon Jun  6 00:00:00 2022,LEES BLOCK A,74
+Sun Jun  5 00:00:00 2022,DMS,73
+Sat Jun  4 00:00:00 2022,STEM,73
+Thu Jun  2 00:00:00 2022,1 Stewart,70
+Mon Jun  6 00:00:00 2022,LEES BLOCK E,70
+Thu Jun  2 00:00:00 2022,LMX,70
+Sun Jun  5 00:00:00 2022,STEM,70
+Mon Jun  6 00:00:00 2022,Arts,68
+Sun Jun  5 00:00:00 2022,FSS,67
+Fri Jun  3 00:00:00 2022,KED,66
+Mon Jun  6 00:00:00 2022,LMX,66
+Sun Jun  5 00:00:00 2022,Morisset,65
+Wed Jun  1 00:00:00 2022,850 Peter Morand,64
+Mon May 30 00:00:00 2022,STEM,64
+Mon May 30 00:00:00 2022,bioScience,64
+Mon May 30 00:00:00 2022,Tabaret,62
+Sat Jun  4 00:00:00 2022,FSS,61
+Mon May 30 00:00:00 2022,Vanier,61
+Fri Jun  3 00:00:00 2022,Hagen,60
+Mon Jun  6 00:00:00 2022,Hagen,58
+Fri Jun  3 00:00:00 2022,EMBA,56
+Wed Jun  1 00:00:00 2022,1 Stewart,55
+Tue May 31 00:00:00 2022,Hagen,55
+Thu Jun  2 00:00:00 2022,LEES BLOCK E,55
+Fri Jun  3 00:00:00 2022,1 Stewart,52
+Sat Jun  4 00:00:00 2022,Fauteux,51
+Tue May 31 00:00:00 2022,KED,51
+Tue May 31 00:00:00 2022,1 Stewart,50
+Mon Jun  6 00:00:00 2022,600 Peter Morand,50
+Fri Jun  3 00:00:00 2022,MCU,50
+Sat Jun  4 00:00:00 2022,ARC,49
+Mon May 30 00:00:00 2022,UniCenter,48
+Mon May 30 00:00:00 2022,CAREG,47
+Mon May 30 00:00:00 2022,Marion,47
+Wed Jun  1 00:00:00 2022,Perez,46
+Tue May 31 00:00:00 2022,600 Peter Morand,45
+Thu Jun  2 00:00:00 2022,600 Peter Morand,44
+Tue May 31 00:00:00 2022,EMBA,44
+Mon Jun  6 00:00:00 2022,EMBA,43
+Sun Jun  5 00:00:00 2022,MontPetit,43
+Sat Jun  4 00:00:00 2022,SITE,43
+Sat Jun  4 00:00:00 2022,DMS,42
+Thu Jun  2 00:00:00 2022,KED,42
+Fri Jun  3 00:00:00 2022,Perez,42
+Wed Jun  1 00:00:00 2022,Hagen,41
+Sat Jun  4 00:00:00 2022,Vanier,41
+Fri Jun  3 00:00:00 2022,535 Legget,40
+Thu Jun  2 00:00:00 2022,LEES BLOCK A,39
+Tue May 31 00:00:00 2022,MCU,39
+Thu Jun  2 00:00:00 2022,Perez,39
+Sat Jun  4 00:00:00 2022,Tabaret,39
+Sun Jun  5 00:00:00 2022,ARC,38
+Wed Jun  1 00:00:00 2022,600 Peter Morand,37
+Mon May 30 00:00:00 2022,Arts,36
+Sat Jun  4 00:00:00 2022,Diorio,36
+Sun Jun  5 00:00:00 2022,Fauteux,36
+Thu Jun  2 00:00:00 2022,MCU,36
+Mon Jun  6 00:00:00 2022,MCU,36
+Thu Jun  2 00:00:00 2022,Hagen,35
+Sun Jun  5 00:00:00 2022,SITE,35
+Wed Jun  1 00:00:00 2022,EMBA,34
+Mon May 30 00:00:00 2022,LMX,34
+Wed Jun  1 00:00:00 2022,MCU,34
+Wed Jun  1 00:00:00 2022,KED,33
+Tue May 31 00:00:00 2022,Morriset,33
+Mon Jun  6 00:00:00 2022,1 Stewart,32
+Mon Jun  6 00:00:00 2022,KED,32
+Sun Jun  5 00:00:00 2022,bioScience,32
+Thu Jun  2 00:00:00 2022,EMBA,31
+Mon Jun  6 00:00:00 2022,535 Legget,30
+Sun Jun  5 00:00:00 2022,Diorio,30
+Wed Jun  1 00:00:00 2022,AlumniHouse,29
+Sat Jun  4 00:00:00 2022,Arts,29
+Mon May 30 00:00:00 2022,LPR,29
+Mon Jun  6 00:00:00 2022,Morriset,29
+Tue May 31 00:00:00 2022,Perez,29
+Sat Jun  4 00:00:00 2022,Perez,29
+Sun Jun  5 00:00:00 2022,Sacre Coeur,29
+Tue May 31 00:00:00 2022,Thompson,29
+Sat Jun  4 00:00:00 2022,bioScience,29
+Thu Jun  2 00:00:00 2022,850 Peter Morand,28
+Fri Jun  3 00:00:00 2022,600 Peter Morand,27
+Mon Jun  6 00:00:00 2022,850 Peter Morand,27
+Sun Jun  5 00:00:00 2022,CAREG,27
+Sun Jun  5 00:00:00 2022,Simard,27
+Tue May 31 00:00:00 2022,100 Laurier,26
+Wed Jun  1 00:00:00 2022,100 Laurier,26
+Tue May 31 00:00:00 2022,AlumniHouse,26
+Sat Jun  4 00:00:00 2022,CAREG,26
+Wed Jun  1 00:00:00 2022,Morriset,25
+Wed Jun  1 00:00:00 2022,Brooks,24
+Wed Jun  1 00:00:00 2022,LEES BLOCK A,24
+Sun Jun  5 00:00:00 2022,Marion,24
+Fri Jun  3 00:00:00 2022,Morriset,24
+Mon Jun  6 00:00:00 2022,Perez,24
+Sun Jun  5 00:00:00 2022,Tabaret,24
+Sun Jun  5 00:00:00 2022,UniCenter,24
+Tue May 31 00:00:00 2022,535 Legget,23
+Wed Jun  1 00:00:00 2022,535 Legget,23
+Tue May 31 00:00:00 2022,850 Peter Morand,23
+Tue May 31 00:00:00 2022,Brooks,23
+Mon Jun  6 00:00:00 2022,Brooks,23
+Fri Jun  3 00:00:00 2022,LEES BLOCK A,23
+Tue May 31 00:00:00 2022,Seraphin Marion,23
+Wed Jun  1 00:00:00 2022,Stewart,23
+Mon Jun  6 00:00:00 2022,Thompson,23
+Sun Jun  5 00:00:00 2022,Vanier,23
+Thu Jun  2 00:00:00 2022,535 Legget,22
+Mon May 30 00:00:00 2022,LEES BLOCK E,22
+Mon May 30 00:00:00 2022,Simard,22
+Thu Jun  2 00:00:00 2022,Brooks,21
+Fri Jun  3 00:00:00 2022,Brooks,21
+Mon Jun  6 00:00:00 2022,Seraphin Marion,21
+Sat Jun  4 00:00:00 2022,Simard,21
+Wed Jun  1 00:00:00 2022,Thompson,21
+Sat Jun  4 00:00:00 2022,UniCenter,21
+Thu Jun  2 00:00:00 2022,AlumniHouse,20
+Mon May 30 00:00:00 2022,KED,20
+Thu Jun  2 00:00:00 2022,Morriset,20
+Fri Jun  3 00:00:00 2022,Thompson,20
+Sat Jun  4 00:00:00 2022,Marion,19
+Thu Jun  2 00:00:00 2022,Seraphin Marion,19
+Thu Jun  2 00:00:00 2022,Thompson,19
+Sat Jun  4 00:00:00 2022,Thompson,19
+Fri Jun  3 00:00:00 2022,100 Laurier,18
+Mon Jun  6 00:00:00 2022,AlumniHouse,18
+Mon May 30 00:00:00 2022,MCU,18
+Mon May 30 00:00:00 2022,Perez,18
+Thu Jun  2 00:00:00 2022,100 Laurier,17
+Sat Jun  4 00:00:00 2022,LPR,17
+Wed Jun  1 00:00:00 2022,Seraphin Marion,17
+Mon May 30 00:00:00 2022,AlumniHouse,16
+Fri Jun  3 00:00:00 2022,AlumniHouse,16
+Sun Jun  5 00:00:00 2022,LPR,16
+Fri Jun  3 00:00:00 2022,Marchand,16
+Mon May 30 00:00:00 2022,Morriset,16
+Tue May 31 00:00:00 2022,Stewart,16
+Sun Jun  5 00:00:00 2022,AlumniHouse,15
+Sun Jun  5 00:00:00 2022,LMX,15
+Mon Jun  6 00:00:00 2022,100 Laurier,14
+Wed Jun  1 00:00:00 2022,Academic Hall,14
+Mon May 30 00:00:00 2022,Hagen,14
+Sun Jun  5 00:00:00 2022,Hagen,14
+Sun Jun  5 00:00:00 2022,Perez,14
+Fri Jun  3 00:00:00 2022,Seraphin Marion,14
+Mon Jun  6 00:00:00 2022,Stewart,14
+Sun Jun  5 00:00:00 2022,Arts,13
+Sat Jun  4 00:00:00 2022,Hagen,13
+Wed Jun  1 00:00:00 2022,Marchand,13
+Sun Jun  5 00:00:00 2022,600 Peter Morand,12
+Wed Jun  1 00:00:00 2022,Gendron,12
+Sat Jun  4 00:00:00 2022,Sacre Coeur,12
+Mon May 30 00:00:00 2022,1 Stewart,11
+Mon May 30 00:00:00 2022,535 Legget,11
+Mon May 30 00:00:00 2022,600 Peter Morand,11
+Sat Jun  4 00:00:00 2022,600 Peter Morand,11
+Sun Jun  5 00:00:00 2022,LEES BLOCK E,11
+Mon May 30 00:00:00 2022,100 Laurier,10
+Tue May 31 00:00:00 2022,Gendron,10
+Sat Jun  4 00:00:00 2022,KED,10
+Sat Jun  4 00:00:00 2022,LEES BLOCK A,10
+Sat Jun  4 00:00:00 2022,MCU,10
+Mon May 30 00:00:00 2022,Sacre Coeur,10
+Thu Jun  2 00:00:00 2022,Stewart,10
+Tue May 31 00:00:00 2022,316 Rideau,9
+Sun Jun  5 00:00:00 2022,535 Legget,9
+Tue May 31 00:00:00 2022,Copernicus,9
+Mon May 30 00:00:00 2022,LEES BLOCK A,9
+Tue May 31 00:00:00 2022,Marchand,9
+Thu Jun  2 00:00:00 2022,Marchand,9
+Tue May 31 00:00:00 2022,Sacre Coeur,9
+Mon May 30 00:00:00 2022,Thompson,9
+Sun Jun  5 00:00:00 2022,Thompson,9
+Sat Jun  4 00:00:00 2022,100 Laurier,8
+Sun Jun  5 00:00:00 2022,100 Laurier,8
+Sat Jun  4 00:00:00 2022,AlumniHouse,8
+Thu Jun  2 00:00:00 2022,Copernicus,8
+Fri Jun  3 00:00:00 2022,GradHouse,8
+Sun Jun  5 00:00:00 2022,KED,8
+Sat Jun  4 00:00:00 2022,LEES BLOCK E,8
+Mon Jun  6 00:00:00 2022,Marchand,8
+Thu Jun  2 00:00:00 2022,Sacre Coeur,8
+Sat Jun  4 00:00:00 2022,Seraphin Marion,8
+Fri Jun  3 00:00:00 2022,Stewart,8
+Sat Jun  4 00:00:00 2022,Stewart,8
+Thu Jun  2 00:00:00 2022,1 Nicholas,7
+Sat Jun  4 00:00:00 2022,535 Legget,7
+Thu Jun  2 00:00:00 2022,Academic Hall,7
+Mon May 30 00:00:00 2022,Copernicus,7
+Wed Jun  1 00:00:00 2022,Copernicus,7
+Sun Jun  5 00:00:00 2022,Morriset,7
+Mon May 30 00:00:00 2022,Seraphin Marion,7
+Sat Jun  4 00:00:00 2022,1 Stewart,6
+Tue May 31 00:00:00 2022,180 Waller,6
+Thu Jun  2 00:00:00 2022,200 Wilbrod,6
+Fri Jun  3 00:00:00 2022,Copernicus,6
+Thu Jun  2 00:00:00 2022,Gendron,6
+Tue May 31 00:00:00 2022,GradHouse,6
+Mon Jun  6 00:00:00 2022,GradHouse,6
+Sun Jun  5 00:00:00 2022,LEES BLOCK A,6
+Sun Jun  5 00:00:00 2022,MCU,6
+Sat Jun  4 00:00:00 2022,Morriset,6
+Mon Jun  6 00:00:00 2022,Sacre Coeur,6
+Sun Jun  5 00:00:00 2022,Seraphin Marion,6
+Mon May 30 00:00:00 2022,Stewart,6
+Sun Jun  5 00:00:00 2022,Stewart,6
+Mon Jun  6 00:00:00 2022,1 Nicholas,5
+Wed Jun  1 00:00:00 2022,200 Wilbrod,5
+Mon May 30 00:00:00 2022,Brooks,5
+Sat Jun  4 00:00:00 2022,Brooks,5
+Sun Jun  5 00:00:00 2022,Brooks,5
+Mon Jun  6 00:00:00 2022,Copernicus,5
+Mon May 30 00:00:00 2022,EMBA,5
+Mon Jun  6 00:00:00 2022,Gendron,5
+Wed Jun  1 00:00:00 2022,GradHouse,5
+Thu Jun  2 00:00:00 2022,GradHouse,5
+Wed Jun  1 00:00:00 2022,Sacre Coeur,5
+Mon May 30 00:00:00 2022,1 Nicholas,4
+Tue May 31 00:00:00 2022,1 Nicholas,4
+Wed Jun  1 00:00:00 2022,1 Nicholas,4
+Fri Jun  3 00:00:00 2022,1 Nicholas,4
+Sun Jun  5 00:00:00 2022,1 Stewart,4
+Wed Jun  1 00:00:00 2022,180 Waller,4
+Mon May 30 00:00:00 2022,200 Wilbrod,4
+Tue May 31 00:00:00 2022,200 Wilbrod,4
+Fri Jun  3 00:00:00 2022,200 Wilbrod,4
+Wed Jun  1 00:00:00 2022,316 Rideau,4
+Thu Jun  2 00:00:00 2022,316 Rideau,4
+Fri Jun  3 00:00:00 2022,316 Rideau,4
+Mon Jun  6 00:00:00 2022,316 Rideau,4
+Mon Jun  6 00:00:00 2022,Academic Hall,4
+Sat Jun  4 00:00:00 2022,Copernicus,4
+Sun Jun  5 00:00:00 2022,EMBA,4
+Fri Jun  3 00:00:00 2022,Gendron,4
+Wed Jun  1 00:00:00 2022,Henderson,4
+Mon May 30 00:00:00 2022,Marchand,4
+Sat Jun  4 00:00:00 2022,Marchand,4
+Fri Jun  3 00:00:00 2022,Sacre Coeur,4
+Thu Jun  2 00:00:00 2022,180 Waller,3
+Mon Jun  6 00:00:00 2022,180 Waller,3
+Mon Jun  6 00:00:00 2022,200 Wilbrod,3
+Mon May 30 00:00:00 2022,316 Rideau,3
+Mon May 30 00:00:00 2022,850 Peter Morand,3
+Sat Jun  4 00:00:00 2022,850 Peter Morand,3
+Sun Jun  5 00:00:00 2022,850 Peter Morand,3
+Sun Jun  5 00:00:00 2022,Copernicus,3
+Sat Jun  4 00:00:00 2022,EMBA,3
+Mon May 30 00:00:00 2022,GradHouse,3
+Sat Jun  4 00:00:00 2022,GradHouse,3
+Tue May 31 00:00:00 2022,Henderson,3
+Sat Jun  4 00:00:00 2022,1 Nicholas,2
+Sun Jun  5 00:00:00 2022,1 Nicholas,2
+Mon May 30 00:00:00 2022,180 Waller,2
+Fri Jun  3 00:00:00 2022,180 Waller,2
+Sun Jun  5 00:00:00 2022,180 Waller,2
+Sat Jun  4 00:00:00 2022,200 Wilbrod,2
+Sun Jun  5 00:00:00 2022,200 Wilbrod,2
+Sat Jun  4 00:00:00 2022,316 Rideau,2
+Tue May 31 00:00:00 2022,Academic Hall,2
+Fri Jun  3 00:00:00 2022,Academic Hall,2
+Sun Jun  5 00:00:00 2022,Academic Hall,2
+Sun Jun  5 00:00:00 2022,GradHouse,2
+Sun Jun  5 00:00:00 2022,Marchand,2
+Sat Jun  4 00:00:00 2022,180 Waller,1
+Sun Jun  5 00:00:00 2022,316 Rideau,1
+Mon May 30 00:00:00 2022,Academic Hall,1
+Sat Jun  4 00:00:00 2022,Academic Hall,1
+Mon May 30 00:00:00 2022,Gendron,1
+Tue May 31 00:00:00 2022,LEES BLOCK C,1
+Thu Jun  2 00:00:00 2022,LEES BLOCK C,1
+Mon Jun  6 00:00:00 2022,LEES BLOCK C,1
+Sat Jun  4 00:00:00 2022,Gendron,0
+Sun Jun  5 00:00:00 2022,Gendron,0
+Mon May 30 00:00:00 2022,Henderson,0
+Thu Jun  2 00:00:00 2022,Henderson,0
+Fri Jun  3 00:00:00 2022,Henderson,0
+Sat Jun  4 00:00:00 2022,Henderson,0
+Sun Jun  5 00:00:00 2022,Henderson,0
+Mon Jun  6 00:00:00 2022,Henderson,0
+Mon May 30 00:00:00 2022,LEES BLOCK B,0
+Tue May 31 00:00:00 2022,LEES BLOCK B,0
+Wed Jun  1 00:00:00 2022,LEES BLOCK B,0
+Thu Jun  2 00:00:00 2022,LEES BLOCK B,0
+Fri Jun  3 00:00:00 2022,LEES BLOCK B,0
+Sat Jun  4 00:00:00 2022,LEES BLOCK B,0
+Sun Jun  5 00:00:00 2022,LEES BLOCK B,0
+Mon Jun  6 00:00:00 2022,LEES BLOCK B,0
+Mon May 30 00:00:00 2022,LEES BLOCK C,0
+Wed Jun  1 00:00:00 2022,LEES BLOCK C,0
+Fri Jun  3 00:00:00 2022,LEES BLOCK C,0
+Sat Jun  4 00:00:00 2022,LEES BLOCK C,0
+Sun Jun  5 00:00:00 2022,LEES BLOCK C,0
+Mon May 30 00:00:00 2022,LEES BLOCK D,0
+Tue May 31 00:00:00 2022,LEES BLOCK D,0
+Wed Jun  1 00:00:00 2022,LEES BLOCK D,0
+Thu Jun  2 00:00:00 2022,LEES BLOCK D,0
+Fri Jun  3 00:00:00 2022,LEES BLOCK D,0
+Sat Jun  4 00:00:00 2022,LEES BLOCK D,0
+Sun Jun  5 00:00:00 2022,LEES BLOCK D,0
+Mon Jun  6 00:00:00 2022,LEES BLOCK D,0
+Mon May 30 00:00:00 2022,Leblanc,0
+Tue May 31 00:00:00 2022,Leblanc,0
+Wed Jun  1 00:00:00 2022,Leblanc,0
+Thu Jun  2 00:00:00 2022,Leblanc,0
+Fri Jun  3 00:00:00 2022,Leblanc,0
+Sat Jun  4 00:00:00 2022,Leblanc,0
+Sun Jun  5 00:00:00 2022,Leblanc,0
+Mon Jun  6 00:00:00 2022,Leblanc,0
+Mon May 30 00:00:00 2022,Polytek,0
+Tue May 31 00:00:00 2022,Polytek,0
+Wed Jun  1 00:00:00 2022,Polytek,0
+Thu Jun  2 00:00:00 2022,Polytek,0
+Fri Jun  3 00:00:00 2022,Polytek,0
+Sat Jun  4 00:00:00 2022,Polytek,0
+Sun Jun  5 00:00:00 2022,Polytek,0
+Mon Jun  6 00:00:00 2022,Polytek,0
