@@ -92,7 +92,8 @@ lookup_ww <- tribble(
 
 # UOttawa waste water data from R. Delatolla
 uottawa_ww <-
-  read_csv(here::here('data/ww_university_clean.csv'))
+  read_csv(here::here('data/ww_university_clean.csv'),
+           show_col_types = F)
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -180,6 +181,7 @@ Our model formula is `cases ~ positives[lag 1 week] + (1|site)`.
 The model is fit as follows:
 
 ```{r eval=FALSE, echo=TRUE}
+# not run; just to show
 swab_model <-
   blme::bglmer(
     cases_binary ~ detection_lag_1week + (1 | site),
@@ -347,7 +349,14 @@ rm(uo_multivariate)
 ### Wifi Traffic
 
 ```{r wifi_ts, fig.height=6, fig.width=8}
-plot_UO_wifi_ts(wifi, swabs)
+wifi |> 
+  mutate(tooltip = str_glue(
+    "<p>{date}</p>
+    <p>{site}</p>
+    <p>{clients} clients</p>
+    "
+  )) |> 
+  plot_UO_wifi_ts(swabs)
 ```
 
 This panel shows a time-series of the daily peak number of wifi users at UO facilities. Sampling days are highlighted in blue.\
@@ -542,13 +551,23 @@ campus_ww_swab_summary |>
 
 ## Waste Water - UO
 
-I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 near-campus sites (raw data below).
+I've removed the off-campus site (Robert Guidon Hall) and retained the other 6 near-campus sites (raw data below). The swab collection period is indicated by dashed lines.
 
 ```{r fig.width=6, fig.height=5}
 uottawa_ww |>
-  ggplot(aes(sample_date, signal)) +
-  geom_path(alpha = 0.6) +
-  geom_point(alpha = 0.5, size = 0.5) +
+  ggplot() +
+    geom_rect(
+      data = tibble(xmin = min(swabs$date_swab),
+                    xmax = max(swabs$date_swab),
+                    ymin = -Inf,
+                    ymax = Inf,
+                    ),
+      aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = 'grey90', color = 'gray',
+            size = 0.5,
+            lty = 2, alpha = 0.5) +
+  geom_path(aes(sample_date, signal), alpha = 0.6) +
+  geom_point(aes(sample_date, signal), alpha = 0.5, size = 0.5) +
   labs(x = 'Date', y = 'SARS-CoV-2 / PPMoV') +
   facet_wrap(~site, ncol = 2)
 
