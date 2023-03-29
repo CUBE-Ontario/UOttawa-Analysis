@@ -52,6 +52,7 @@ library(ggiraph)
 library(patchwork)
 library(ggtext)
 library(janitor)
+set.seed(123)
 
 ggplot2::theme_set(theme_bw() + theme(
   legend.text = element_markdown(family = 'IBM Plex Sans', colour = 'gray30'),
@@ -1545,7 +1546,7 @@ ggsave('fig/figure_3.png', figure_3, device = 'png', dpi = 300, height = 6, widt
 
 ggsave('fig/figure_s1.png', figure_s1, device = 'png', dpi = 300, height = 4, width = 7)
 
-mapview::mapshot(figure_sites_map, file = 'fig/map.pdf',
+mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
                  remove_controls = T)
 ```
 
