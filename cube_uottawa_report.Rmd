@@ -28,8 +28,9 @@ Manuscript draft (google doc) available here:   https://docs.google.com/document
 - <input type="checkbox" checked>  Test high vs low traffic as FE in RE model</input>
 - <input type="checkbox" checked>  Finalize fig. 2</input>
 - <input type="checkbox" checked>  Finalize fig. 3</input>
-- <input type="checkbox" unchecked>  SFig: WW by building </input>
-- <input type="checkbox" unchecked>  Finish written methods and results</input>
+- <input type="checkbox" checked>  SFig: WW by building </input>
+- <input type="checkbox" unchecked>  Finish text interpolation --> written results</input>
+- <input type="checkbox" unchecked>  Revise stats methods section</input>
 
 
 
@@ -571,13 +572,13 @@ rm(corr_r, corr_p, corrtest)
 - **Hypothesis testing**. *H~A~*: swab-PCR positivity, CO~2~, wifi, and WW signals are  predictive of number of cases. *H~0~*: no relationship.
 - **Method**: Backwards selection of significant predictors, ANOVA  
 - **Formula**: `cases ~ swab_pcr + co2 + wifi + {university_ww} + regional_ww + (all interactions...)`. 
-- **Issue**: only 29 complete observations
+- Data: 29 complete observations
    - `cases` counted only until Feb 2022 (~40% miss).  
    - `university_ww` couple missing dates.
    - `wifi` occasional missing data. 
-- **Question**: do we want standardized effects or simple effects? (I standardized because we are mostly interested in comparing different predictors within a model, as opposed to across different data sets.) 
-- **Question**: do we want to consider interactions?  (I did and didn't)
-   
+- We standardized our predictors such that we would get standardize effects, since we are mostly interested in comparing different predictors within a model, as opposed to comparing estimates across different data sets.
+- We did not consider interactions because of the limited size of our dataset
+
 <br>
 
 ```{r model data, fig.height=5, fig.width=5, fig.align='center'}
@@ -605,7 +606,7 @@ naniar::vis_miss(df_mod) +
 <details>
 <summary>Case count distribution</summary>
 
-**Cases counts** seem to follow a negative binomial distribution more than Poisson.
+**Cases counts** seem to follow a negative binomial distribution a bit more than a Poisson. There is maybe some zero-inflation in our cases variable.
 
 ```{r cases distribution, fig.height=5, fig.width=5}
 # simulated curves
@@ -665,23 +666,23 @@ rm(p1, p2, add_poisson_density_curve, add_nb_density_curve)
 <br>
 
 ```{r model summary functions}
-coefficients_table <- function(model) {
+coefficients_table <- function(model, caption) {
   model |> 
     broom::tidy(conf.int = T, conf.level = 0.95) |> 
     mutate(across(where(is.double), ~round(., 4))) |> 
     kableExtra::kable(
       format = 'pipe',
-      caption = "Poisson model with interactions: Coefficients & 95% CI"
+      caption = caption
     )
   }
 
-incidence_ratio_table <- function(model) {
+incidence_ratio_table <- function(model, caption) {
   model |> 
     broom::tidy(exponentiate = T, conf.int = T, conf.level = 0.95) |> 
   mutate(across(where(is.double), ~round(., 4))) |> 
   kableExtra::kable(
     format = 'pipe',
-    caption = "Poisson model with interactions: Incidence ratios & 95% CI"
+    caption = caption
     )
 }
 
@@ -702,15 +703,23 @@ anova_table <- function(model, type, caption){
 
 #### Poisson Main Effects Only
 
-Poisson model chosen by backward elimination with no interactions identifies swab positivity, Ottawa WW signal, university WW, and wifi as significant predictors. CO2 is the only main effect dropped from the full model during backward elimination
+Poisson model chosen by backward elimination with no interactions identifies swab positivity, Ottawa WW signal, university WW, and wifi as significant predictors. CO2 is the only main effect dropped from the full model during backward elimination.
+
 
 ```{r}
-# backwards select with n=30, no university ww
+# poission reg, full model, main effects only
 mod_pois_main_eff <- glm(
   cases ~ .,
   data = df_mod_complete_obs |> select(-biweek), 
   family = 'poisson'
   )
+
+# we computed generalized variance-inflation factors (with car::vif) to examine mu
+# ottawa_ww has high collinearity
+# violates the assumption of 
+# coefficients could be highly sensitive to changes in the model
+car::vif(mod_pois_main_eff)
+
 
 mod_pois_main_eff_stepwise <- step(mod_pois_main_eff, trace = T)
 stopifnot(mod_pois_main_eff_stepwise$converged)
@@ -719,10 +728,14 @@ stopifnot(mod_pois_main_eff_stepwise$converged)
 AER::dispersiontest(mod_pois_main_eff_stepwise)
 
 # regression coefs and 95%CI
-mod_pois_main_eff_stepwise |> coefficients_table()
+mod_pois_main_eff_stepwise |> coefficients_table(
+  caption = "Poisson regression summary: coefficients & 95% CI for model selected by backward elimination"
+)
 
 # incidence ratios
-mod_pois_main_eff_stepwise |> incidence_ratio_table()
+mod_pois_main_eff_stepwise |> incidence_ratio_table(
+  caption = "Poisson model summary: Incidence ratios & 95% CI for model selected by backward elimination"
+)
 
 # type II SS test
 mod_pois_main_eff_stepwise |> anova_table(type = 2, caption = "Type II ANOVA")
@@ -761,10 +774,14 @@ mod_pois_intrx_stepwise <- step(mod_pois_intrx, trace = F)
 stopifnot(mod_pois_intrx_stepwise$converged)
 
 # standardized coefs and 95% CI
-mod_pois_intrx_stepwise |> coefficients_table()
+mod_pois_intrx_stepwise |> coefficients_table(
+  caption = "Poisson model with interactions: coefs & 95% CI"
+)
 
 # incidence ratios
-mod_pois_intrx_stepwise |> incidence_ratio_table()
+mod_pois_intrx_stepwise |> incidence_ratio_table(
+  caption = "Poisson model with interactions: incidence ratios & 95% CI"
+)
 
 
 # use type III SS tests since have significant interactions 
@@ -790,7 +807,7 @@ rm(mod_pois_intrx)
 
 --------------------------------------------
 
-### GLMM: High v Low Traffic
+### Model for High v Low Traffic
 
 To evaluate whether high traffic locations are different from low traffic sites, in terms of swab-PCR positivity, we fit a mixed model with random intercepts for different sites. There was slightly greater swab positivity at high traffic sites (15%) than low traffic sites (12%). Our model indicates that the effect is small and non-significant; high-traffic sites had an OR of 1.28 (95% CI 0.77, 2.13) compared to low-traffic sites. 
 
@@ -812,7 +829,7 @@ traffic_model <-
     family = 'binomial'
   ) |> 
   broom.mixed::tidy(conf.int = T, exponentiate = T) |> 
-  mutate(across(where(is.double), ~round(., 4)))
+  mutate(across(where(is.double), ~round(., 2)))
   
 # positivity results
 swab_summary_location_traffic |> 
@@ -834,7 +851,13 @@ traffic_model |>
 --------------------------------------------
 
 
-### Model: Cases w/in buildings
+### Model for Cases w/in buildings
+
+To model case counts at the building level, we
+fit a Poisson regression with a random intercept for each site, using the quantity of SARS-CoV-2 RNA recovered by PCR as a predictor. For this model, our predictor was the log-transformed mean number of viral copies (plus one) per-building during weekly intervals. Thus our model formula was: $cases \sim log10(copies + 1) + (1 | site)$
+
+Generalized linear mixed model was fit by maximum likelihood using the 'lme4' function from the 'glmer' package. From the fitted model, we computed incidence ratios and Wald-type 95% CIs.
+
 
 ```{r}
 study_period_weeks <- crossing(
@@ -847,7 +870,7 @@ study_period_weeks <- crossing(
   distinct(site, week)
 
 # group swabs by week & site
-per_bldg_swabs <- 
+bldg_swabs <- 
   swabs_tidy |> 
   filter(date_swab < '2022-02-02') |> 
   mutate(
@@ -867,7 +890,7 @@ per_bldg_swabs <-
   mutate(week = week_to_date(week))
 
 # 72 cases associated with study bldgs (at least one)
-per_bldg_cases <- 
+bldg_cases <- 
   cases |> 
   filter(case_date > '2021-09-20') |> 
   unnest(associated_sites) |> 
@@ -881,82 +904,64 @@ per_bldg_cases <-
   summarise(cases = n(), .groups = 'drop') |> 
   mutate(week = week_to_date(week))
 
-per_bldg_df <- per_bldg_swabs |> 
-  left_join(per_bldg_cases, by = join_by(site, week)) |> 
+bldg_df <- bldg_swabs |> 
+  left_join(bldg_cases, by = join_by(site, week)) |> 
   mutate(cases = if_else(is.na(cases), 0, cases))
 
-rm(study_period_weeks, per_bldg_cases, per_bldg_swabs)
-```
+rm(study_period_weeks, bldg_cases, bldg_swabs)
 
-
-**Poisson GLM w random intercepts: Cases ~ positivity + (1|site)**
-
-```{r}
-per_bldg_model <- lme4::glmer(
-  cases ~ positivity + (1|site),
-  data = per_bldg_df,
-  family = 'poisson'
-)
-broom.mixed::glance(per_bldg_model)
-# Wald CIs
-broom.mixed::tidy(per_bldg_model, conf.int = T, conf.level = 0.95)
-
-
-points_df <- crossing(
-  positivity = seq(0, 1, 0.1),
-  site = unique(per_bldg_df$site) 
-)
-
-points_df |> 
-  mutate(   
-    pred = predict(
-      type = 'response',
-      object = per_bldg_model, 
-      newdata = points_df
-    )) |> 
-  ggplot(aes(positivity, pred, color = site)) +
-  geom_smooth(se = F, linewidth = 0.25, alpha = 1) + 
-  geom_jitter(data = per_bldg_df,
-              alpha = 0.75, shape = 1, size = 0.85,
-              width = 0.01, height = 0.01,
-              aes(positivity, cases)) +
-  labs(x = 'Swab positivity', y = 'Cases', color = 'Site')
-
-broom.mixed::tidy(per_bldg_model, 'ran_vals', 
-                  conf.int = T, conf.level = 0.95) |> 
-  ggplot(aes(y = level,
-             x = estimate, 
-             xmin = conf.low, 
-             xmax = conf.high)) +
-  geom_pointrange()
-```
-
-
-----
-
-```{r}
-per_bldg_model_copies <- lme4::glmer(
+# fit model
+bldg_model <- lme4::glmer(
   cases ~ log10(copies_plus_one) + (1|site),
-  data = per_bldg_df,
+  data = bldg_df,
   family = 'poisson'
 )
-broom.mixed::glance(per_bldg_model_copies)
-# Wald CIs
-broom.mixed::tidy(per_bldg_model_copies, 
-                  conf.int = T, 
-                  conf.level = 0.95)
+
+broom.mixed::glance(bldg_model)
+
+# coefs
+broom.mixed::tidy(
+  bldg_model, 
+  conf.int = T, 
+  exponentiate = F,
+  conf.level = 0.95,
+  conf.method = "Wald")
 
 
+# Wald-type CIs
+bldg_model_summary <- 
+  broom.mixed::tidy(
+    bldg_model, 
+    conf.int = T, 
+    exponentiate = T,
+    conf.level = 0.95,
+    conf.method = "Wald")
+print(bldg_model_summary)
+
+# exponentiate doesn't work on random values..
+bldg_model_intercepts <- 
+  broom.mixed::tidy(
+    bldg_model, 
+    effects = 'ran_vals', 
+    exponentiate = F,
+    conf.int = T, 
+    conf.level = 0.95
+  ) |> 
+  # convert coefs to IRs
+  mutate(across(c(estimate, conf.low, conf.high), exp))
+
+
+# visualize model fit & data
 points_df <- crossing(
   copies_plus_one = 10 ** seq(0, 1.13, 0.0001),
-  site = unique(per_bldg_df$site) 
+  site = unique(bldg_df$site) 
 )
 
 points_df |> 
   mutate(   
     pred = predict(
       type = 'response',
-      object = per_bldg_model_copies, 
+      object = bldg_model, 
       newdata = points_df
     )) |> 
   ggplot(aes(copies_plus_one, pred, color = site)) +
@@ -965,24 +970,57 @@ points_df |>
     method = 'gam',
      formula = y ~ s(x, bs = "cs")
     ) + 
-  geom_jitter(data = per_bldg_df,
+  geom_jitter(data = bldg_df,
               alpha = 0.75, shape = 1, size = 0.85,
               width = 0.01, height = 0.01,
               aes(copies_plus_one, cases)) +
   labs(x = 'Swab: copies+1', y = 'Cases', color = 'Site') +
   scale_x_log10()
 
-broom.mixed::tidy(per_bldg_model_copies, 'ran_vals', 
-                  conf.int = T, conf.level = 0.95) |> 
+broom.mixed::tidy(bldg_model, 'ran_vals', 
+                  conf.int = T, 
+                  conf.level = 0.95) |> 
+  mutate(across(c(estimate, conf.low, conf.high), exp)) |> 
   ggplot(aes(y = level,
              x = estimate, 
              xmin = conf.low, 
              xmax = conf.high)) +
-  geom_pointrange()
+  geom_pointrange() +
+  scale_x_log10()
 ```
 
 
+```{r}
+lst(
+  term = bldg_model_summary |> 
+    filter(term == "log10(copies_plus_one)"),
+  IR = term$estimate |> round(0),
+  IR_LO = term$conf.low |> round(0),
+  IR_HI = term$conf.high |> round(0),
+  VAR  = bldg_model_summary |> 
+    filter(term == "sd__(Intercept)") |> 
+    pluck('estimate') |> round(2),
+  ints = bldg_model_intercepts,
+  INT_MIN = ints |> pull(estimate) |>  min() |> round(2),
+  INT_MAX = ints |> pull(estimate) |>  max() |> round(1)
+) |> 
+  glue_data(
+    "
+We sought to evalute surface detection of SARS-CoV-2 as a predictor of case burden at the building level. We applied a  mixed-effects Poisson regression analysis; random slopes were specified for buildings to account for repeated measurements on the same buildings. The incidence ratio relating a 10-fold increase in the number of viral copies (plus one) to the total number of reported cases was large and significant with a high level of certainty (IR = {IR}, 95% CI {IR_LO}-{IR_HI}). IRs for individual sites ranged from {INT_MIN} (LPR) to {INT_MAX} (DMS) with moderate variance among sites overall (SD = {VAR}), but differences between sites were small relative to the uncertainty on the individual estimates (table S--).")
+```
 
+
+### Table S..: Model summary for mixed-effects poisson regresson with viral copies as predictor.
+```{r}
+bldg_cases_model_summary
+```
+
+
+### Table S..: Incidence rate ratios for SARS-CoV-2 cases six university buildings estimated by mixed-effects poisson regresson with viral copies as predictor.
+```{r}
+bldg_model_intercepts |> 
+  select(level, estimate, conf.low, conf.high)
+```
 
 
 ----
@@ -1366,10 +1404,10 @@ plot_site_wifi <- function(data, site){
 
 ## Plot datasets ====
 fig3_cases <- 
-  per_bldg_df |> 
+  bldg_df |> 
   mutate(pred = predict(
-    per_bldg_model_copies, 
-    newdata = per_bldg_df, 
+    bldg_model, 
+    newdata = bldg_df, 
     type = 'response')
   ) |> 
   group_nest(site, .key = "cases")
@@ -1478,7 +1516,10 @@ kableExtra::kable(
 **Table 1.** Incidence Ratios from Poisson Regression Model selected by backward elimination: *Cases ~ campus-wide metrics*
 
 ```{r}
-table1 <- mod_pois_main_eff_stepwise |> incidence_ratio_table()
+table1 <- mod_pois_main_eff_stepwise |>
+  incidence_ratio_table(
+    caption = 'Poisson regression model incidence ratios'
+    )
 table1
 
 ```
@@ -1580,11 +1621,7 @@ swabs_tidy |>
 
 --------------------------------------------
 
-
-
-
 ## Results
-
 
 ### Abstract Results
 
@@ -1614,96 +1651,77 @@ cat(rs_abstract)
 
 ### Results (Body)
 
-```{r written rs, results='asis'}
+```{r interpolate rs, results='asis', echo=TRUE}
+
 result_p1 <- 
   lst(
-    corr_swab_uniww = corr_ci |> filter(terms == 'SwPCR-UnvWW'),
-    COR = corr_swab_uniww |> pluck('r') |> round(2), # 0.7
-    corr_r_lo = corr_swab_uniww |> pluck('lower') |> round(2),
-    corr_r_hi = corr_swab_uniww |> pluck('upper') |> round(2),
-    COR_CI = str_glue('{corr_r_lo} - {corr_r_hi}')
+    N_CASES = total_n_cases_study_period, # 116
+    corr_sc = corr_ci |> filter(terms == 'SwPCR-Cases'),
+    COR_SC = corr_sc |> pluck('r') |> round(2), # 0.7
+    corr_r_lo = corr_sc |> pluck('lower') |> round(2),
+    corr_r_hi = corr_sc |> pluck('upper') |> round(2),
+    COR_SC_CI = str_glue('{corr_r_lo}-{corr_r_hi}'),
+    corr_sr = corr_ci |> filter(terms == 'SwPCR-OttWW'),
+    COR_SR = corr_sr |> pluck('r') |> round(2), # 0.7
+    corr_r_lo = corr_sr |> pluck('lower') |> round(2),
+    corr_r_hi = corr_sr |> pluck('upper') |> round(2),
+    COR_SR_CI = str_glue('{corr_r_lo}-{corr_r_hi}'),
+    # corr_sw = corr_ci |> filter(terms == 'SwPCR-UnvWW'),
+    # COR_SW = corr_sw |> pluck('r') |> round(2), # 0.7
+    # corr_r_lo = corr_sw |> pluck('lower') |> round(2),
+    # corr_r_hi = corr_sw |> pluck('upper') |> round(2),
+    # COR_SW_CI = str_glue('{corr_r_lo}-{corr_r_hi}'),
   ) |> 
-  glue::glue_data(
-    "
+  glue::glue_data("
 #### Detection of SARS-CoV-2 from floor swabs and wastewater across campus
 
-From September 2021 to April 2022, we conducted environmental surveillance of SARS-CoV-2 across the University of Ottawa campus using both built environment swabbing and wastewater testing. Floor swabs were collected twice weekly from six buildings on the main campus, including a residence hall, the main library, and lecture and administration buildings. The floors of two sites within each building were sampled, a high-traffic site close to the main entrance, and a low-traffic site at a more remote location within the building. Wastewater was collected from six sites across the main campus over the study period, however only one site (TBT) had any concurrent surface swab observations (Fig. S1). SARS-CoV-2 RNA was detected from built environment and wastewater samples according to established protocols (see Methods) (refs).
+From September 2021 to April 2022, we conducted environmental surveillance of SARS-CoV-2 across the University of Ottawa campus using both built environment swabbing and wastewater testing. Floor swabs were collected twice weekly from six buildings on the main campus, including a residence hall, the main library, and lecture and administration buildings. The floors of two sites within each building were sampled, a high-traffic site close to the main entrance, and a low-traffic site at a more remote location within the building. Wastewater was collected from six sites across the main campus over the study period, however only one site (TBT) had concurrent surface swabbing (Fig. S1). SARS-CoV-2 RNA was detected from built environment and wastewater samples according to established protocols (see Methods) (refs).  
+  
+There were {N_CASES} reported cases of COVID-19 among students and staff on campus during the study period, with case reporting ceased in February 2022. Low numbers of cases were reported in the fall term, and the highest numbers reported in January, coinciding with a campus-wide closure in response to the Omicron variant (Fig. 1). The aggregate environmental surveillance trends broadly paralleled case incidence, with low SARS-CoV-2 detection during the fall term (September to December) and spikes in both floor swab positivity and university wastewater signal in January. A decline after the January peak preceded a second increase in environmental SARS-CoV-2 signal observed in late March (Fig. S1). These university case and environmental detection trends correspond with two increases in COVID-19 prevalence reported in Ottawa city-wide wastewater data.
 
- 	SARS-CoV-2 prevalence was low during the fall term (September to December 2021) according to both aggregate floor swab positivity and normalized wastewater signal (Fig. 1). However, the winter term (January to April 2022) was characterized by two spikes in environmental SARS-CoV-2 signal in January and late March with an intervening trough. This pattern was present in both the built environment and wastewater results and was driven by a subset of the individual sites sampled, specifically 90U, LPR, and MRT buildings (Fig. 3). We found a significant correlation between swab positivity and wastewater signal (Spearman r = {COR}, 95% CI: {COR_CI}). The signal increases occurred after the local introduction of the Omicron variant and correspond with two city-wide peaks in COVID-19 prevalence reported in Ottawa wastewater and case data.
-")
+We observed positive correlations between university cases, swab positivity, university wastewater signal, and Ottawa wastewater signal (Fig. 2). The strongest correlations were between cases and swab positivity (Spearman r = {COR_SC}, 95% CI: {COR_SC_CI}) and Ottawa wastewater and swab positivity (Spearman r = {COR_SR}, 95% CI: {COR_SR_CI}). These results suggest that built environment and wastewater surveillance methods could serve as predictors for estimating active campus cases and that environmental detection of SARS-CoV-2 at the university paralleled city-wide trends.")
+ # We found a significant correlation between swab positivity and wastewater signal (Spearman r = {COR_SW}, 95% CI: {COR_SW_CI}). The signal increases occurred after the local introduction of the Omicron variant and correspond with two city-wide peaks in COVID-19 prevalence reported in Ottawa wastewater and case data.
 
 
 result_p2 <- lst(
-  N_CASES = total_n_cases_study_period, # 116
+  MED_CO2 = median(swabs_tidy$co2, na.rm = T) |> round(),
+  RANGE_CO2 = range(swabs_tidy$co2) |> 
+    paste0(collapse = ' - ')
 ) |> 
-  glue::glue_data(
-    "
-    #### Built environment detection of SARS-CoV-2 corresponds to presence of COVID-19 cases
+  glue::glue_data("
+#### Building occupancy measures such as Wi-Fi usage and CO~2~ levels did not track with case levels or built environment detection.
     
-    For most of the study period (September 2021 to February 2022), members of the university community (faculty, students, and staff) testing positive for COVID-19 were required to report whether they had been on campus while possibly infectious. There were {N_CASES} reported cases of COVID-19 during the study period and their incidence broadly paralleled the environmental surveillance trends, with low numbers of cases reported in the fall term, and the highest numbers reported in January, before case reporting ceased (Fig. 1). Campus buildings visited by individuals with COVID-19 were also reported during the contact tracing procedure, which allowed us to determine whether detection from floor swabs occurred in buildings recently visited by infected individuals. Indeed, two sites with high positivity in January 2022 at the university residence (90U) and an administrative building (LPR), were associated with clusters of reported cases in students and staff, respectively (Fig. 3). In contrast, a high floor swab positivity in the main library during the same period, was not reflected in the case data. This could be an example of environmental surveillance identifying a signal where cases were under-reported (??).
-"
-  )
+The risk of COVID-19 transmission is increased in congregate settings and in buildings with poor ventilation (ref). Therefore, variation in case levels between buildings might reflect differences in building occupancy or ventilation. We used two proxy measures, CO~2~ levels and Wi-Fi usage, to estimate building occupancy or (in the case of CO~2~) poor air ventilation. CO~2~ was measured concurrently with the floor swabbing at each sampling site, while daily building-level Wi-fi usage was shared by the university. CO~2~ concentrations were remarkably stable across buildings and time, at levels indicating high indoor air quality (median: {MED_CO2} ppm, range: {RANGE_CO2} ppm). Wi-fi usage, on the other hand, fluctuated during the term, with expected drops during reading week, winter break, and individual building closures (Figs. 1, 3). Neither measure of building occupancy, however, were significantly correlated with campus COVID-19 cases or floor swab detection during the study period (Fig. 2).
+")
 
 result_p3 <- lst(
-  MED_CO2 = median(swabs_tidy$co2, na.rm = T) |> round(),
-  RANGE_CO2 = range(swabs_tidy$co2) |> paste0(collapse = ' - ')
-) |> 
-  glue::glue_data(
-    "#### Building occupancy measures such as Wi-Fi usage and CO~2~ levels did not track with case levels or built environment detection.
-    
-The risk of COVID-19 transmission is increased in congregate settings and in buildings with poor ventilation (ref). Therefore, variation in case levels between buildings might reflect differences in building occupancy or ventilation. We used two proxy measures, CO~2~ levels and Wi-Fi usage, to estimate building occupancy or (in the case of CO~2~) poor air ventilation. CO~2~ was measured concurrently with the floor swabbing at each sampling site, while daily building-level Wi-fi usage was shared by the university. CO~2~ concentrations were remarkably stable across buildings and time, at levels indicating high indoor air quality (median: {MED_CO2} ppm, range: {RANGE_CO2} ppm). Wi-fi usage, on the other hand, fluctuated during the term, with expected drops during reading week, winter break, and individual building closures (Figs. 1, 3). Both measures of building occupancy, however, did not correlate with either campus COVID-19 cases or floor swab detection during the study period (p < 0.05; Fig. 2)."
-  )
-
-result_p1
-cat('<br>')
-result_p2
-cat('<br>')
-result_p3
-cat('<br>')
-```
-
-
-
-```{r}
-
-# TODO
-terms <- lst()
-lst(
   mod_sum = mod_pois_main_eff_stepwise |> 
-    broom::tidy(exponentiate = T, conf.int = T)
+    broom::tidy(exponentiate = T, conf.int = T),
+  disp_test = AER::dispersiontest(mod_pois_main_eff_stepwise),
+  DISP_EST = disp_test$estimate |> round(2),
+  DISP_P = ifelse(disp_test$p.value > 0.05, ' > 0.05', '≤ 0.05')
 ) |> 
   glue::glue_data("
 #### Modeling of campus-wide cases based on environmental detection
 
-Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. 
-We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. 
-Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), both on-campus and regional waste-water metrics, and Wi-Fi user counts. 
-
-Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1).
-
-surface swab positivity and regional waste-water measures as the most significant predictors of cases during the same period (Table S:A).
-
-We repeated backwards elimination including interaction terms in the initial model. In the selected model, Wi-Fi (ß = 0.94; 95% CI: 0.28, 1.6), and the interaction between surface swabs and regional waste-water (ß = -0.55; 95% CI: -0.93, -0.20) were identified as significant effects, in addition to the swab positivity and regional waste-water (Table S;B). "
+Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), both on-campus and regional waste-water metrics, and Wi-Fi user counts. Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1). The selected model did not violate the assumption of equidispersion (dispersion = {DISP_EST}, *p* {DISP_P}). Regional wastewater did show a moderate collinearity with the other predictors (vif = VIF_WW)."
 )
 
-lst() |> 
-  glue::glue_data(
-"We repeated backwards elimination once more, including on-campus waste-water as a predictor in an initial model with only main effects, though few observations were available for analysis (N=10; Table S:C). On-campus waste-water viral signal was indicated as a useful predictor of cases by the model selection procedure; however, the estimated effect size was small and non-significant (ß = 0.14; 95% CI: -0.03, 0.29), compared to the regional waste-water signal (ß = 0.94, 95% CI: 0.36, 1.6). As this model contained few observations, the surface swab positivity term also became non-significant (ß = 0.31, 95% CI: -0.01, 0.62). "
-)
 
 
 ### TODO: probably remove this and use above instead
 
-lst() |> 
+result_p4 <- lst() |> 
   glue::glue_data(
-"Modeling of per-building environmental detection…
-We validated the predictivity of environmental surveillance against the reported case data, using a model that predicts presence of COVID-19 cases in a sampled building, using swab detection as a predictor. [Table – Model performance]. Fig. 4 overlays the model’s predictions with the surface detection and reported cases.
-[Model of campus-wide cases – using swabs and wastewater as predictors? ie,  complementarity of ww and floor swab approaches.]"
+"
+#### Modeling of per-building environmental detection
+
+"
 )
 
 
 # hi-low traffic effect paragraph
-lst(
+result_p5 <- lst(
   df = swab_summary_location_traffic |> mutate(p = positivity),
   mod = traffic_model |> filter(term == 'traffichigh'),
   high_n = df |> filter(traffic == 'high traffic') |> pull(n),
@@ -1718,10 +1736,38 @@ lst(
   odds_str = str_glue('OR = {odds}, 95% CI {ci_lo}, {ci_hi}'),
 ) |> 
   glue::glue_data(
-"Surface detection of SARS-CoV-2 was not greater in high-traffic areas
+"
+#### Surface detection of SARS-CoV-2 was not greater in high-traffic areas
+
 At each building where environmental surveillance by surface swabbing was performed, we selected one high-traffic area where people often travel or congregate and a second low-traffic area for contrast. We hypothesized that the floors in commonly frequented locations would have greater rates of SARS-CoV-2 detection. However, positivity rates were similar across high-traffic ({hi_str}) and low-traffic sites ({low_str}). To confirm this, we fit a mixed-effects logistic regression model, with the surface swab result as a binary outcome, the traffic level as a fixed effect, and specified random intercepts for each building to account for the clustering of sites. This model indicated that higher-traffic locations did not have significantly greater positivity rates than low-traffic locations ({odds_str})."
 )
 ```
+
+
+```{r, results='asis', echo=FALSE}
+print(result_p1)
+```
+
+
+```{r, results='asis', echo=FALSE}
+print(result_p2)
+```
+
+
+```{r, results='asis', echo=FALSE}
+print(result_p3)
+```
+
+
+```{r, results='asis', echo=FALSE}
+print(result_p4)
+```
+
+
+```{r, results='asis', echo=FALSE}
+print(result_p5)
+```
+
 
 
 --------------------------------------------
@@ -1732,7 +1778,7 @@ Multiple imputation (mice) has a key assumption that data is MAR. But data is (a
 
 Using `mice` means making the analysis *much* more complicated... Generally, you need to model each imputed dataset and then analyze the pooled results. That gets a lot more complicated when needing to first aggregate the data, join to a bunch of other data, do various modelling tasks.... all nested within each iteration.
 
-Instead, I used a simpler ad-hoc method:
+**Instead, I used a simpler ad-hoc method:**
 
   - if positive-test-result date is available, use that, else:
   - use -5 days from end-of-isolation date, or if not available,
@@ -1748,7 +1794,7 @@ Instead, I used a simpler ad-hoc method:
 
 - Generalized linear models were created using the `glm` function. Mixed models were created using the `glmer` function from the package `lme4` (Bates et al.).
 
-- We fit poisson and negative binomial regression models with the number of campus-wide cases as the outcome; we applied backwards selection to evaluate predictors of campus-wide cases, including the aggregated results (means) of surface swabbing, waste-water testing, CO2 monitors, and Wi-Fi user counts.
+- We fit poisson regression models with the number of campus-wide cases as the outcome; we applied backwards selection to evaluate predictors of campus-wide cases, including the aggregated results (means) of surface swabbing, waste-water testing, CO2 monitors, and Wi-Fi user counts.
 
 - We used mixed effects logistic regression to model the presence of SARS-CoV-2 infected individuals as a binary outcome (ie. positive event: one or more cases occurring during a week) in a university building, using surface swab PCR results as predictor with random intercepts for buildings.
 
@@ -1763,67 +1809,7 @@ sessionInfo()
 
 </details>
 
+```{r}
 
-
-
-<!-- ### Model Evaluation -->
-
-<!-- The more complex model, with 5 main effects and 7 pairwise interactions, is probably comically overfit to the limited data we have (n=29). We should probably use cross-validation to estimate model accuracy. We don't really have enough data to split into train and test sets, but we can get an estimate from cross-validation. This estimate may be somewhat pessimistically biased (less data for training per fold).   -->
-
-<!-- ```{r message=FALSE, warning=FALSE} -->
-<!-- library(tidymodels) -->
-<!-- library(poissonreg) -->
-<!-- set.seed(123) -->
-
-<!-- # campus-wide cases and four predictors from stepwise selection -->
-<!-- mod_df <- biweekly_data |>  -->
-<!--   janitor::clean_names() |>  -->
-<!--   select(-biweek, -co2) |>  -->
-<!--   na.omit() -->
-
-<!-- # 45% of intervals have zero cases -->
-<!-- mean(mod_df$cases < 1) -->
-
-<!-- poisson_recipe <-  -->
-<!--   recipe(cases ~ swab_pcr + wi_fi + university_ww + ottawa_ww, -->
-<!--          data = mod_df) |>  -->
-<!--   step_normalize(all_predictors()) -->
-
-<!-- # poisson spec -->
-<!-- poisson_wf <-  -->
-<!--   workflow() |>  -->
-<!--   add_model(poisson_reg(mode = 'regression', engine = 'glm')) |>  -->
-<!--   add_recipe(poisson_recipe) -->
-
-<!-- # fitting one model works  -->
-<!-- fit(poisson_wf, data = mod_df) -->
-
-<!-- # 10x10-fold cv to evaluate model -->
-<!-- folds <- rsample::vfold_cv(mod_df, v = 10, repeats = 10) -->
-<!-- fit_rs <- fit_resamples( -->
-<!--   object = poisson_wf,  -->
-<!--   resamples = folds,  -->
-<!--   control = control_resamples(verbose = F, save_workflow = F) -->
-<!--   ) -->
-<!-- poisson_cv <- collect_metrics(fit_rs) -->
-
-<!-- rmarkdown::paged_table(poisson_cv) -->
-
-
-<!-- ## compare to swabs alone -->
-<!-- poisson_rec_swab <-  -->
-<!--   recipe(cases ~ swab_pcr, data = mod_df) |>  -->
-<!--   step_normalize(all_predictors()) -->
-
-<!-- # poisson spec -->
-<!-- poisson_wf_swab <-  -->
-<!--   workflow() |>  -->
-<!--   add_model(poisson_reg(mode = 'regression', engine = 'glm')) |>  -->
-<!--   add_recipe(poisson_rec_swab) -->
-
-<!-- # 10x10-fold cv to evaluate model -->
-<!-- fit_rs_swab <- poisson_wf_swab |> fit_resamples(folds) -->
-<!-- poisson_cv_swab <- collect_metrics(fit_rs_swab) -->
-<!-- rmarkdown::paged_table(poisson_cv_swab) -->
-<!-- ``` -->
+```
 
