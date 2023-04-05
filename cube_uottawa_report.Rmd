@@ -33,6 +33,17 @@ Manuscript draft (google doc) available here:   https://docs.google.com/document
 - <input type="checkbox" unchecked>  Revise stats methods section</input>
 
 
+## Renamed Sites
+
+Ideas for anonymized building codes:
+
+RES = 90U (university residence)
+LIB = MRT (library)
+GYM = MNT (sports facility and lecture halls)
+ADM1 = TBT (central administration, info-services, lecture halls)
+ADM2 = LPR (campus protection, postal services)
+FAC = DMS (school of management, conference spaces, classrooms, offices)
+
 
 ----
 
@@ -210,21 +221,18 @@ theme_remove_grid <- function(){
 
 # Data ------------------------------------------------
 
-# swab data
-swabs <- 
-  read_rds(here('data/cube.rds')) |> 
-  filter(str_detect(site, '^UO_')) 
-
-# filtered swabs without controls or sponge samples
-swabs_tidy <- swabs |> 
-  filter(!negative_control, 
-         swab_type != 'sponge',
-         date_swab < '2022-04-27') |> 
-  select(date_swab, site, floor, location, pcr_positive, pcr_ct, co2) |> 
-  mutate(biweek = get_date_biweekly(date_swab))
+# Lookup for anonymized building names
+lookup_swab_sites <- lst(
+  '90U' = 'RES',
+  MRT = 'LIB',
+  MNT = 'GYM',
+  TBT = 'ADM1',
+  LPR = 'ADM2',
+  DMS = 'FAC'
+)
 
 # lookup table for waste water site names
-lookup_ww <- tribble(
+lookup_ww_sites <- tribble(
   ~site_abbr, ~site_name,
   'UO_AA',	'Annex Residence',
   'UO_FA',	'Faculty of Social Sciences',
@@ -235,6 +243,25 @@ lookup_ww <- tribble(
   'UO_TBT',	'Tabaret Hall'
 )
 
+# swab data
+swabs <- 
+  read_rds(here('data/cube.rds')) |> 
+  filter(str_detect(site, '^UO_')) |> 
+  mutate(site = str_remove(site, 'UO_'))
+
+# filtered swabs without controls or sponge samples
+swabs_tidy <- 
+  swabs |> 
+  filter(
+    !negative_control, 
+    swab_type != 'sponge',
+    date_swab < '2022-04-27'
+  ) |> 
+  select(date_swab, site, floor, location, pcr_positive, pcr_ct, co2) |> 
+  mutate(
+    biweek = get_date_biweekly(date_swab),
+    site = map_chr(site, ~lookup_swab_sites[[.]])
+  )
 
 # UOttawa waste water data from R. Delatolla to clean
 clean_ww_excel <- function(){
@@ -267,7 +294,7 @@ uottawa_ww <-
     sample_date > '2021-09-15',
     sample_date < '2022-05-05'
   ) |>
-  left_join(lookup_ww, by = c('site' = 'site_abbr')) 
+  left_join(lookup_ww_sites, by = c('site' = 'site_abbr')) 
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -286,7 +313,8 @@ wifi <-
   read_rds(here('data/uo_wifi.rds')) |> 
   filter(date >= min(swabs$date_swab) - 2, 
          date <= max(swabs$date_swab) + 2) |> 
-  mutate(biweek = get_date_biweekly(date))
+  mutate(biweek = get_date_biweekly(date),
+         site = map_chr(site, ~lookup_swab_sites[[.]]))
 
 # important dates for context
 event_dates <- 
@@ -304,9 +332,11 @@ event_dates <-
 # clean data from: source(here('R/01_impute_missing_case_dates.R'))
 cases <-
   read_rds(here('data/cases_rule_imputed.rds')) |> 
-  select(case, role, case_date, UC:TBT) |>
+  select(-c(symptoms_began, tested, positive_result, isolation_end, 
+            confirmed_by_test)) |>
+  set_names(c('case', 'role', 'RES', 'FAC', 'ADM2', 'GYM', 'LIB', 'ADM1', 'case_date')) |> 
   mutate(biweek = get_date_biweekly(case_date)) |> 
-  nest(associated_sites = UC:TBT)
+  nest(associated_sites = RES:ADM1)
 
 
 total_n_cases_study_period <- 
@@ -756,57 +786,6 @@ rm(mod_pois_main_eff)
 --------------------------------------------
 
 
-#### Poisson Model with all interactions
-
-Backwards selection (and stepwise) arrived at the model with `swab_pcr`, `wifi`, `ottawa_ww`, and the interaction between `ottawa_ww` & `swab_pcr`.  
-
-```{r}
-# poisson model for cases with interactions, n = 29
-mod_pois_intrx <- glm(
-  cases ~ . ^ 2,
-  data = df_mod_complete_obs |> select(-biweek), 
-  family = 'poisson')
-
-# do backward elim
-mod_pois_intrx_stepwise <- step(mod_pois_intrx, trace = F)
-
-# stepwise_poisson <- step(mod_pois_interactions, trace = F, direction = 'both')
-stopifnot(mod_pois_intrx_stepwise$converged)
-
-# standardized coefs and 95% CI
-mod_pois_intrx_stepwise |> coefficients_table(
-  caption = "Poisson model with interactions: coefs & 95% CI"
-)
-
-# incidence ratios
-mod_pois_intrx_stepwise |> incidence_ratio_table(
-  caption = "Poisson model with interactions: incidence ratios & 95% CI"
-)
-
-
-# use type III SS tests since have significant interactions 
-mod_pois_intrx_stepwise |> anova_table(type = 3, caption = "Type III ANOVA")
-
-# test model assumption of equidispersion
-# p > 0.05 means no significant overdispersion
-AER::dispersiontest(mod_pois_intrx_stepwise)
-```
-
-<details>
-<summary>***Backward selection model summary and diagnostics***</summary>
-```{r}
-summary(mod_pois_intrx)
-summary(mod_pois_intrx_stepwise)
-hist(mod_pois_intrx_stepwise$residuals)
-# plot(mod_pois_interactions_stepwise)
-rm(mod_pois_intrx)
-```
-</details>
-
-<br>
-
---------------------------------------------
-
 ### Model for High v Low Traffic
 
 To evaluate whether high traffic locations are different from low traffic sites, in terms of swab-PCR positivity, we fit a mixed model with random intercepts for different sites. There was slightly greater swab positivity at high traffic sites (15%) than low traffic sites (12%). Our model indicates that the effect is small and non-significant; high-traffic sites had an OR of 1.28 (95% CI 0.77, 2.13) compared to low-traffic sites. 
@@ -860,21 +839,11 @@ Generalized linear mixed model was fit by maximum likelihood using the 'lme4' fu
 
 
 ```{r}
-study_period_weeks <- crossing(
-  date = as_date(as_date('2021-09-21'):as_date('2022-01-31')),
-  site = c('90U', 'DMS', 'LPR', 'MNT', 'MRT', 'TBT')
-  ) |> 
-  mutate(
-    week = get_date_week(date),
-    redate = week_to_date(week)) |> 
-  distinct(site, week)
-
 # group swabs by week & site
 bldg_swabs <- 
   swabs_tidy |> 
   filter(date_swab < '2022-02-02') |> 
   mutate(
-    site = str_remove(site, 'UO_'),
     week = get_date_week(date_swab) |> as.character(),
     copies = convert_cq_to_copies(pcr_ct),
     copies_plus_one = if_else(
@@ -894,12 +863,10 @@ bldg_cases <-
   cases |> 
   filter(case_date > '2021-09-20') |> 
   unnest(associated_sites) |> 
-  pivot_longer(UC:TBT, names_to = 'site') |> 
+  pivot_longer(RES:ADM1, names_to = 'site') |> 
   filter(value) |> 
   select(-value, -biweek, -case) |> 
-  mutate(
-    site = str_replace(site, 'UC', '90U'),
-    week = get_date_week(case_date)) |> 
+  mutate(week = get_date_week(case_date)) |> 
   group_by(week, site) |> 
   summarise(cases = n(), .groups = 'drop') |> 
   mutate(week = week_to_date(week))
@@ -908,7 +875,7 @@ bldg_df <- bldg_swabs |>
   left_join(bldg_cases, by = join_by(site, week)) |> 
   mutate(cases = if_else(is.na(cases), 0, cases))
 
-rm(study_period_weeks, bldg_cases, bldg_swabs)
+rm(bldg_cases, bldg_swabs)
 
 # fit model
 bldg_model <- lme4::glmer(
@@ -936,6 +903,7 @@ bldg_model_summary <-
     exponentiate = T,
     conf.level = 0.95,
     conf.method = "Wald")
+
 print(bldg_model_summary)
 
 # exponentiate doesn't work on random values..
@@ -1012,7 +980,7 @@ We sought to evalute surface detection of SARS-CoV-2 as a predictor of case burd
 
 ### Table S..: Model summary for mixed-effects poisson regresson with viral copies as predictor.
 ```{r}
-bldg_cases_model_summary
+bldg_model_summary
 ```
 
 
@@ -1179,6 +1147,7 @@ fig1_ott_ww <-
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
         axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
+# TODO FIX OVERLAPPING BARS IN CASES PANEL
 figure_1 <- wrap_plots(
     fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
     fig1_wifi, fig1_uo_ww, fig1_ott_ww
@@ -1191,7 +1160,6 @@ rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1
 
 ```{r figure 2, echo=TRUE}
 ## Figure 2: Corr heatmap -----------------------------------
-
 figure_2 <- corrr::autoplot(corr_spearman, triangular = "lower",
                              barheight = 10) +
   geom_text(aes(label = r |> round(2)), size = 3.5)
@@ -1249,7 +1217,7 @@ theme_axes_lb <- function(){
   )
 }
 
-theme_axis_90U <- function(){
+theme_axis_RES <- function(){
   theme_remove_grid() +
   theme(
     panel.border = element_blank(),
@@ -1262,7 +1230,7 @@ theme_axis_90U <- function(){
 }
 
 remove_y_axis_if_not_leftmost <- function(p, site){
-  if (site %in% c('DMS', 'TBT', 'LPR')) return(p)
+  if (site %in% c('FAC', 'ADM1', 'ADM2')) return(p)
   p + theme_no_y_labels()
 }
 
@@ -1370,8 +1338,8 @@ plot_site_swabs <- function(data, site){
           axis.text.x = element_markdown(size = 6),
           legend.text = element_markdown())
   
-  if (site == '90U') {
-    p <- p + theme_axis_90U()
+  if (site == 'RES') {
+    p <- p + theme_axis_RES()
   } else {
     p <- p + theme_no_x_labels()
   }
@@ -1415,7 +1383,6 @@ fig3_cases <-
 fig3_swabs <- 
   swabs_tidy |> 
   mutate(
-    site = str_remove(site, 'UO_'),
     traffic = get_traffic_level(location),
     copies = convert_cq_to_copies(pcr_ct),
     copies_plus_one = if_else(is.na(copies), 1, copies + 1)
@@ -1440,7 +1407,7 @@ fig3_df_nest <- fig3_cases |>
 fig3_plts <- 
   fig3_df_nest |>
   mutate(site = factor(site, levels = c(
-    'DMS','MRT', 'TBT', 'MNT', 'LPR', '90U'
+    'FAC', 'LIB', 'ADM1', 'GYM', 'ADM2', 'RES'
   ))) |> 
   arrange(site) |> 
   transmute(
@@ -1456,12 +1423,12 @@ fig3_plts <-
         plt_cases, plt_swabs, plt_wifi, 
         ncol = 1
       ) 
-      if (site == '90U') {
+      if (site == 'RES') {
         p <- p + patchwork::plot_layout(
           heights = c(1.16, 1.14, 0.63)
         )
       }
-      needs_axis <- site %in% c('DMS', 'TBT', 'LPR')
+      needs_axis <- site %in% c('FAC', 'ADM1', 'ADM2')
       if (needs_axis) return(p)
       p + patchwork::plot_annotation(theme = theme(
         axis.title.y = element_blank(),
@@ -1557,7 +1524,7 @@ figure_2
 ```{r fig3, fig.width=8, fig.height=6}
 figure_3
 ```
-**Figure 3.** Campus COVID-19 cases, swab results, CO~2~ concentrations (during swab collection), and daily peak Wi-Fi connections by building. Cases plots show counts of self-reported cases as bars and fitted values from the poisson mixed model as blue points. Case data collection was abandoned in early February 2022 (shaded area). Swabs and CO~2~ plots show results at two locations within each building, with one sample collected in a high-traffic area and the other in a low-traffic area. Swab PCR results are expressed as the number of SARS-CoV-2 RNA copies plus one, on a log-scale. Points represent the result for a single swab. Wi-fi plots show the peak daily number of simultaneous connections per building. No Wi-Fi data was available for the 90U building. Shaded areas on the 'copies' and 'wifi' panels indicate university closures and study breaks.
+**Figure 3.** Campus COVID-19 cases, swab results, CO~2~ concentrations (during swab collection), and daily peak Wi-Fi connections by building. Cases plots show counts of self-reported cases as bars and fitted values from the poisson mixed model as blue points. Case data collection was abandoned in early February 2022 (shaded area). Swabs and CO~2~ plots show results at two locations within each building, with one sample collected in a high-traffic area and the other in a low-traffic area. Swab PCR results are expressed as the number of SARS-CoV-2 RNA copies plus one, on a log-scale. Points represent the result for a single swab. Wi-fi plots show the peak daily number of simultaneous connections per building. No Wi-Fi data was available for the RES building. Shaded areas on the 'copies' and 'wifi' panels indicate university closures and study breaks.
 
  <!-- (Add shading for breaks, building closures). -->
 
