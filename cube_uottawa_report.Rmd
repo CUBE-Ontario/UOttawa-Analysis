@@ -942,7 +942,7 @@ fig1_cases <-
   geom_col(
     aes(biweek, value, fill = name),
     linewidth = 0.15,
-    width = 3.5,
+    width = 2,
     color = 'gray80',
     position = position_stack(),
     na.rm = T

@@ -13,10 +13,10 @@ rmarkdown::render(
   output_dir = '~/Dropbox/CUBE Study/Data Analysis/'
 )
 
-rmarkdown::render(
-  input = 'cube_uottawa_eda.Rmd',
-  output_dir = '~/Dropbox/CUBE Study/Data Analysis/'
-)
+# rmarkdown::render(
+#   input = 'cube_uottawa_eda.Rmd',
+#   output_dir = '~/Dropbox/CUBE Study/Data Analysis/'
+# )
 
 # copy figures to dropbox
 fs::dir_info(here::here('fig')) |>
