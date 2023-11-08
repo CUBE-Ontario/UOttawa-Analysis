@@ -14,28 +14,9 @@ Manuscript draft (google doc) available here:   https://docs.google.com/document
 
 ----
 
-## TODO
-
-- <input type="checkbox" checked> Site summary data</input>
-- <input type="checkbox" checked> Biweekly summary of variables</input>
-  - <input type="checkbox" checked> Figures plus events timeline</input>
-  - <input type="checkbox" checked> Correlation & Heatmap</input>
-  - <input type="checkbox" checked> Add case counts / fix figure</input>
-  
-- <input type="checkbox" checked> Case Date Imputation. about that..</input>
-
-- <input type="checkbox" checked>  Model for cases ~ .</input>
-- <input type="checkbox" checked>  Test high vs low traffic as FE in RE model</input>
-- <input type="checkbox" checked>  Finalize fig. 2</input>
-- <input type="checkbox" checked>  Finalize fig. 3</input>
-- <input type="checkbox" checked>  SFig: WW by building </input>
-- <input type="checkbox" unchecked>  Finish text interpolation --> written results</input>
-- <input type="checkbox" unchecked>  Revise stats methods section</input>
-
-
 ## Renamed Sites
 
-Ideas for anonymized building codes:
+Anonymized building codes:
 
 RES = 90U (university residence)
 LIB = MRT (library)
@@ -232,16 +213,16 @@ lookup_swab_sites <- lst(
 )
 
 # lookup table for waste water site names
-lookup_ww_sites <- tribble(
-  ~site_abbr, ~site_name,
-  'UO_AA',	'Annex Residence',
-  'UO_FA',	'Faculty of Social Sciences',
-  'UO_FT',	'Friel Residence',
-  'UO_NA',	'Northern sampling site',
-  'UO_RGN',	'Roger Guindon Hall',
-  'UO_ST',	'Southern sampling site',
-  'UO_TBT',	'Tabaret Hall'
-)
+# lookup_ww_sites <- tribble(
+#   ~site_abbr, ~site_name,
+#   'UO_AA',	'Annex Residence',
+#   'UO_FA',	'Faculty of Social Sciences',
+#   'UO_FT',	'Friel Residence',
+#   'UO_NA',	'Northern sampling site',
+#   'UO_RGN',	'Roger Guindon Hall',
+#   'UO_ST',	'Southern sampling site',
+#   'UO_TBT',	'Tabaret Hall'
+# )
 
 # swab data
 swabs <- 
@@ -264,37 +245,37 @@ swabs_tidy <-
   )
 
 # UOttawa waste water data from R. Delatolla to clean
-clean_ww_excel <- function(){
-  readxl::read_excel(here::here('data/ww_university.xlsx')) |> 
-    janitor::clean_names() |> 
-    transmute(
-      sample_date = as_date(sample_date),
-      site = source_name,
-      signal = viral_copies_per_copies_pep_avg
-    ) |> 
-    mutate(
-      site = str_remove_all(
-        site, 'Data\\s-\\suOttawa\\s-\\s|.xlsx'
-      ) |> 
-        str_to_upper()
-    ) |>
-    filter(site != 'UO_RGN', !is.na(signal)) 
-}
-
-clean_ww_excel() |> 
-  write_csv(here::here('data/ww_university_clean.csv'))
-
-rm(clean_ww_excel)
+# clean_ww_excel <- function(){
+#   readxl::read_excel(here::here('data/ww_university.xlsx')) |> 
+#     janitor::clean_names() |> 
+#     transmute(
+#       sample_date = as_date(sample_date),
+#       site = source_name,
+#       signal = viral_copies_per_copies_pep_avg
+#     ) |> 
+#     mutate(
+#       site = str_remove_all(
+#         site, 'Data\\s-\\suOttawa\\s-\\s|.xlsx'
+#       ) |> 
+#         str_to_upper()
+#     ) |>
+#     filter(site != 'UO_RGN', !is.na(signal)) 
+# }
+# 
+# clean_ww_excel() |> 
+#   write_csv(here::here('data/ww_university_clean.csv'))
+# rm(clean_ww_excel)
 
 # clean WW data close to study period, no RGN site.
-uottawa_ww <-
-  read_csv(here::here('data/ww_university_clean.csv'),
-           show_col_types = FALSE) |> 
-  filter(
-    sample_date > '2021-09-15',
-    sample_date < '2022-05-05'
-  ) |>
-  left_join(lookup_ww_sites, by = c('site' = 'site_abbr')) 
+# TODO DELETE
+# uottawa_ww <-
+#   read_csv(here::here('data/ww_university_clean.csv'),
+#            show_col_types = FALSE) |> 
+#   filter(
+#     sample_date > '2021-09-15',
+#     sample_date < '2022-05-05'
+#   ) |>
+#   left_join(lookup_ww_sites, by = c('site' = 'site_abbr')) 
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -417,13 +398,14 @@ swabs_biweekly_by_site <-
     by = join_by(site, biweek, n)
   )
 
+# TODO Delete
 # UOttawa ww biweekly means
-uottawa_ww_biweekly <- 
-  uottawa_ww |> 
-  mutate(biweek = get_date_biweekly(sample_date)) |> 
-  group_by(biweek) |> 
-  summarise(signal = mean(signal, na.rm = T),
-            n = n())
+# uottawa_ww_biweekly <- 
+#   uottawa_ww |> 
+#   mutate(biweek = get_date_biweekly(sample_date)) |> 
+#   group_by(biweek) |> 
+#   summarise(signal = mean(signal, na.rm = T),
+#             n = n())
 
 # daily ww data for study period
 regional_ww_daily <- 
@@ -477,15 +459,16 @@ swab_coords <- tribble(
   'LPR',  'Louis Pasteur Bldg.', 45.42137566861, -75.6802638999,
 )
 
-ww_coords <- tribble(
-  ~site, ~name, ~lat, ~lng,
-  'aa', 'Annex Residence', 45.4267812902, -75.6803440596,
-  'fa', 'Faculty of Soc. Sci.', 45.4216247, -75.6839038601,
-  'ft', 'Friel Residence', 45.4304344008, -75.6829076653,
-  'tbt', 'Tabaret Hall', 45.4245094016, -75.6863190018
-  # 'na', 'North sampling Site', NA, NA,
-  # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
-)
+# TODO delete
+# ww_coords <- tribble(
+#   ~site, ~name, ~lat, ~lng,
+#   'aa', 'Annex Residence', 45.4267812902, -75.6803440596,
+#   'fa', 'Faculty of Soc. Sci.', 45.4216247, -75.6839038601,
+#   'ft', 'Friel Residence', 45.4304344008, -75.6829076653,
+#   'tbt', 'Tabaret Hall', 45.4245094016, -75.6863190018
+#   # 'na', 'North sampling Site', NA, NA,
+#   # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
+# )
 
 figure_sites_map <- 
   leaflet::leaflet(swab_coords, width = '300px', height = '300px') |> 
@@ -512,41 +495,33 @@ figure_sites_map <-
     label = ~site, 
     radius = 2,
     color = '#440099'
-    ) |> 
-  leaflet::addCircleMarkers(
-    data = ww_coords, 
-    ~lng,
-    ~lat, 
-    label =  ~name, 
-    popup =  ~name, 
-    radius = 4, 
-    color = '#f96999'
-    )
+    ) 
+# TODO delete ww markers
+# |> 
+#   leaflet::addCircleMarkers(
+#     data = ww_coords, 
+#     ~lng,
+#     ~lat, 
+#     label =  ~name, 
+#     popup =  ~name, 
+#     radius = 4, 
+#     color = '#f96999'
+#     )
 
 
 # Results ----------------------------------------------------
 
 ## corr -----
 
-# joined data for pairwise correlation 
-biweekly_data <- swabs_biweekly |> 
-  transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean) |> 
-  left_join(
-    wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
-    by = 'biweek'
-    ) |> 
-  left_join(
-    uottawa_ww_biweekly |> transmute(biweek, `University WW` = signal),
-    by = 'biweek'
-  ) |> 
-  left_join(
-    regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
-    by = 'biweek'
-  ) |> 
-  left_join(
-    cases_biweekly |> transmute(biweek, Cases = cases),
-    by = 'biweek'
-  )
+# joining data for pairwise correlations
+biweekly_data <-  lst(
+  swab_co2 = swabs_biweekly |> 
+    transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean),
+  wifi = wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
+  ww = regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
+  cases = cases_biweekly |> transmute(biweek, Cases = cases),
+) |> 
+  reduce(left_join, by = 'biweek')
 
 corr_spearman <- biweekly_data |> 
   select(-biweek) |> 
@@ -1108,25 +1083,6 @@ fig1_wifi <-
   theme_no_x_labels() +
   theme_remove_grid()
 
-fig1_uo_ww <-
-  ggplot(uottawa_ww_biweekly,
-         aes(biweek, signal)) +
-  geom_smooth(span = 0.4, alpha = 0.2, linewidth = 0.5,
-              fill = theme_color, na.rm = T) +
-  geom_point(
-    # aes(size = n),
-    alpha = 0.85, shape = 1, size = 1,
-    color = theme_color,
-    na.rm = T,
-    show.legend = F) +
-  labs(
-    title = 'University Waste-Water',
-  ) +
-  scale_x_study_dates() +
-  scale_size(range = c(1, 3)) +
-  theme_no_x_labels() +
-  theme_remove_grid()
-
 fig1_ott_ww <- 
   ggplot(regional_ww_daily) + 
   geom_smooth(aes(sample_date, mean), 
@@ -1147,10 +1103,14 @@ fig1_ott_ww <-
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
         axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
-# TODO FIX OVERLAPPING BARS IN CASES PANEL
+# now with university ww removed (fig1_uo_ww), 
 figure_1 <- wrap_plots(
-    fig1_timeline, fig1_cases, fig1_swabs, fig1_co2, 
-    fig1_wifi, fig1_uo_ww, fig1_ott_ww
+    fig1_timeline, 
+    fig1_cases, 
+    fig1_swabs, 
+    fig1_co2, 
+    fig1_wifi, 
+    fig1_ott_ww
   ) +
   plot_layout(ncol = 1, nrow = 7, heights = c(1, rep(1.5, 6)))
 
@@ -1530,14 +1490,15 @@ figure_3
 
 
 ```{r s1 wastewater}
-figure_s1 <- uottawa_ww |> 
-  ggplot(aes(sample_date, signal)) +
-  geom_point(size = 0.5, alpha = 0.5) +
-  geom_line(alpha = 0.5) +
-  facet_wrap(~site_name) +
-  labs(x = 'Date', y = 'SARS-CoV-2:PPMoV ratio')
-
-figure_s1
+# TODO delete
+# figure_s1 <- uottawa_ww |>
+#   ggplot(aes(sample_date, signal)) +
+#   geom_point(size = 0.5, alpha = 0.5) +
+#   geom_line(alpha = 0.5) +
+#   facet_wrap(~site_name) +
+#   labs(x = 'Date', y = 'SARS-CoV-2:PPMoV ratio')
+#
+# figure_s1
 ```
 
 ### Supplemental
@@ -1552,7 +1513,8 @@ ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', height = 4, width = 4)
 ggsave('fig/figure_2.png', figure_2, device = 'png', height = 4, width = 4)
 ggsave('fig/figure_3.png', figure_3, device = 'png', dpi = 300, height = 6, width = 6)
 
-ggsave('fig/figure_s1.png', figure_s1, device = 'png', dpi = 300, height = 4, width = 7)
+# TODO Delete
+# ggsave('fig/figure_s1.png', figure_s1, device = 'png', dpi = 300, height = 4, width = 7)
 
 mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
                  remove_controls = T)
