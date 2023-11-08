@@ -18,12 +18,12 @@ Manuscript draft (google doc) available here:   https://docs.google.com/document
 
 Anonymized building codes:
 
-RES = 90U (university residence)
-LIB = MRT (library)
-GYM = MNT (sports facility and lecture halls)
-ADM1 = TBT (central administration, info-services, lecture halls)
-ADM2 = LPR (campus protection, postal services)
-FAC = DMS (school of management, conference spaces, classrooms, offices)
+- RES = 90U (university residence)
+- LIB = MRT (library)
+- GYM = MNT (sports facility and lecture halls)
+- ADM1 = TBT (central administration, info-services, lecture halls)
+- ADM2 = LPR (campus protection, postal services)
+- FAC = DMS (school of management, conference spaces, classrooms, offices)
 
 
 ----
@@ -212,18 +212,6 @@ lookup_swab_sites <- lst(
   DMS = 'FAC'
 )
 
-# lookup table for waste water site names
-# lookup_ww_sites <- tribble(
-#   ~site_abbr, ~site_name,
-#   'UO_AA',	'Annex Residence',
-#   'UO_FA',	'Faculty of Social Sciences',
-#   'UO_FT',	'Friel Residence',
-#   'UO_NA',	'Northern sampling site',
-#   'UO_RGN',	'Roger Guindon Hall',
-#   'UO_ST',	'Southern sampling site',
-#   'UO_TBT',	'Tabaret Hall'
-# )
-
 # swab data
 swabs <- 
   read_rds(here('data/cube.rds')) |> 
@@ -243,39 +231,6 @@ swabs_tidy <-
     biweek = get_date_biweekly(date_swab),
     site = map_chr(site, ~lookup_swab_sites[[.]])
   )
-
-# UOttawa waste water data from R. Delatolla to clean
-# clean_ww_excel <- function(){
-#   readxl::read_excel(here::here('data/ww_university.xlsx')) |> 
-#     janitor::clean_names() |> 
-#     transmute(
-#       sample_date = as_date(sample_date),
-#       site = source_name,
-#       signal = viral_copies_per_copies_pep_avg
-#     ) |> 
-#     mutate(
-#       site = str_remove_all(
-#         site, 'Data\\s-\\suOttawa\\s-\\s|.xlsx'
-#       ) |> 
-#         str_to_upper()
-#     ) |>
-#     filter(site != 'UO_RGN', !is.na(signal)) 
-# }
-# 
-# clean_ww_excel() |> 
-#   write_csv(here::here('data/ww_university_clean.csv'))
-# rm(clean_ww_excel)
-
-# clean WW data close to study period, no RGN site.
-# TODO DELETE
-# uottawa_ww <-
-#   read_csv(here::here('data/ww_university_clean.csv'),
-#            show_col_types = FALSE) |> 
-#   filter(
-#     sample_date > '2021-09-15',
-#     sample_date < '2022-05-05'
-#   ) |>
-#   left_join(lookup_ww_sites, by = c('site' = 'site_abbr')) 
 
 # ottawa wastewater data: daily means
 regional_ww <- 
@@ -398,16 +353,7 @@ swabs_biweekly_by_site <-
     by = join_by(site, biweek, n)
   )
 
-# TODO Delete
-# UOttawa ww biweekly means
-# uottawa_ww_biweekly <- 
-#   uottawa_ww |> 
-#   mutate(biweek = get_date_biweekly(sample_date)) |> 
-#   group_by(biweek) |> 
-#   summarise(signal = mean(signal, na.rm = T),
-#             n = n())
-
-# daily ww data for study period
+# daily regional ww data for study period
 regional_ww_daily <- 
   regional_ww |> 
   filter(
@@ -459,17 +405,6 @@ swab_coords <- tribble(
   'LPR',  'Louis Pasteur Bldg.', 45.42137566861, -75.6802638999,
 )
 
-# TODO delete
-# ww_coords <- tribble(
-#   ~site, ~name, ~lat, ~lng,
-#   'aa', 'Annex Residence', 45.4267812902, -75.6803440596,
-#   'fa', 'Faculty of Soc. Sci.', 45.4216247, -75.6839038601,
-#   'ft', 'Friel Residence', 45.4304344008, -75.6829076653,
-#   'tbt', 'Tabaret Hall', 45.4245094016, -75.6863190018
-#   # 'na', 'North sampling Site', NA, NA,
-#   # 'st', 'South Sampling Site', NA, NA, # Nobody knows where this is
-# )
-
 figure_sites_map <- 
   leaflet::leaflet(swab_coords, width = '300px', height = '300px') |> 
   leaflet::addProviderTiles(
@@ -496,18 +431,6 @@ figure_sites_map <-
     radius = 2,
     color = '#440099'
     ) 
-# TODO delete ww markers
-# |> 
-#   leaflet::addCircleMarkers(
-#     data = ww_coords, 
-#     ~lng,
-#     ~lat, 
-#     label =  ~name, 
-#     popup =  ~name, 
-#     radius = 4, 
-#     color = '#f96999'
-#     )
-
 
 # Results ----------------------------------------------------
 
@@ -576,10 +499,9 @@ rm(corr_r, corr_p, corrtest)
 
 - **Hypothesis testing**. *H~A~*: swab-PCR positivity, CO~2~, wifi, and WW signals are  predictive of number of cases. *H~0~*: no relationship.
 - **Method**: Backwards selection of significant predictors, ANOVA  
-- **Formula**: `cases ~ swab_pcr + co2 + wifi + {university_ww} + regional_ww + (all interactions...)`. 
+- **Formula**: `cases ~ swab_pcr + co2 + wifi + regional_ww + (all interactions...)`. 
 - Data: 29 complete observations
    - `cases` counted only until Feb 2022 (~40% miss).  
-   - `university_ww` couple missing dates.
    - `wifi` occasional missing data. 
 - We standardized our predictors such that we would get standardize effects, since we are mostly interested in comparing different predictors within a model, as opposed to comparing estimates across different data sets.
 - We did not consider interactions because of the limited size of our dataset
@@ -708,7 +630,7 @@ anova_table <- function(model, type, caption){
 
 #### Poisson Main Effects Only
 
-Poisson model chosen by backward elimination with no interactions identifies swab positivity, Ottawa WW signal, university WW, and wifi as significant predictors. CO2 is the only main effect dropped from the full model during backward elimination.
+Poisson model chosen by backward elimination with no interactions identifies swab positivity, Ottawa WW signal, and wifi as significant predictors. CO2 is the only main effect dropped from the full model during backward elimination.
 
 
 ```{r}
@@ -721,7 +643,7 @@ mod_pois_main_eff <- glm(
 
 # we computed generalized variance-inflation factors (with car::vif) to examine mu
 # ottawa_ww has high collinearity
-# violates the assumption of 
+# violates the assumption of ...
 # coefficients could be highly sensitive to changes in the model
 car::vif(mod_pois_main_eff)
 
@@ -1103,18 +1025,17 @@ fig1_ott_ww <-
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
         axis.text.x = ggtext::element_markdown(size = 6.7)) 
 
-# now with university ww removed (fig1_uo_ww), 
 figure_1 <- wrap_plots(
     fig1_timeline, 
     fig1_cases, 
     fig1_swabs, 
     fig1_co2, 
     fig1_wifi, 
-    fig1_ott_ww
+    fig1_ott_ww # this is regional ww
   ) +
   plot_layout(ncol = 1, nrow = 7, heights = c(1, rep(1.5, 6)))
 
-rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_uo_ww, fig1_ott_ww, fig1_cases)
+rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_ott_ww, fig1_cases)
 ```
 
 
@@ -1440,6 +1361,8 @@ kableExtra::kable(
   )
 ```
 
+<br>
+
 **Table 1.** Incidence Ratios from Poisson Regression Model selected by backward elimination: *Cases ~ campus-wide metrics*
 
 ```{r}
@@ -1486,24 +1409,8 @@ figure_3
 ```
 **Figure 3.** Campus COVID-19 cases, swab results, CO~2~ concentrations (during swab collection), and daily peak Wi-Fi connections by building. Cases plots show counts of self-reported cases as bars and fitted values from the poisson mixed model as blue points. Case data collection was abandoned in early February 2022 (shaded area). Swabs and CO~2~ plots show results at two locations within each building, with one sample collected in a high-traffic area and the other in a low-traffic area. Swab PCR results are expressed as the number of SARS-CoV-2 RNA copies plus one, on a log-scale. Points represent the result for a single swab. Wi-fi plots show the peak daily number of simultaneous connections per building. No Wi-Fi data was available for the RES building. Shaded areas on the 'copies' and 'wifi' panels indicate university closures and study breaks.
 
- <!-- (Add shading for breaks, building closures). -->
-
-
-```{r s1 wastewater}
-# TODO delete
-# figure_s1 <- uottawa_ww |>
-#   ggplot(aes(sample_date, signal)) +
-#   geom_point(size = 0.5, alpha = 0.5) +
-#   geom_line(alpha = 0.5) +
-#   facet_wrap(~site_name) +
-#   labs(x = 'Date', y = 'SARS-CoV-2:PPMoV ratio')
-#
-# figure_s1
-```
 
 ### Supplemental
-
-**Figure S1.** Daily university wastewater sampling.
 
 ```{r save figs}
 ## save figures ----
@@ -1512,9 +1419,6 @@ ggsave('fig/figure_1.png', figure_1, device = 'png', width = 7, height = 7)
 ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', height = 4, width = 4)
 ggsave('fig/figure_2.png', figure_2, device = 'png', height = 4, width = 4)
 ggsave('fig/figure_3.png', figure_3, device = 'png', dpi = 300, height = 6, width = 6)
-
-# TODO Delete
-# ggsave('fig/figure_s1.png', figure_s1, device = 'png', dpi = 300, height = 4, width = 7)
 
 mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
                  remove_controls = T)
@@ -1528,9 +1432,8 @@ mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
 figure_sites_map
 ```
 
-**Figure S2: Map of swab and waste-water sampling sites.** Pink markers represent waste-water collection sites; purple markers represent buildings where surface testing was performed. Only one building, Tabaret Hall, had both surface and waste-water testing. The locations of two waste-water sampling sites could not be ascertained and are not displayed on the map.
+**Figure S2: Map of swab collection sites.** Pink markers represent waste-water collection sites; purple markers represent buildings where surface testing was performed.
 
-**It remains unclear** which buildings the 'South Sampling Site' and 'North Sampling Site' catchment areas are related to (not mapped).
 
 
 --------------------------------------------
@@ -1564,8 +1467,7 @@ rs_data <- lst(
 
 rs_abstract <- rs_data |> 
   glue::glue_data(
-    "Over the 32-week study period, we collected {N_SWABS} swabs at six university buildings, including two buildings where wastewater surveillance was currently ongoing. 
-Overall, {POS}% of swabs were PCR-positive for SARS-CoV-2, with individual buildings ranging between {POS_MIN}% and {POS_MAX}%.
+    "Over the 32-week study period, we collected {N_SWABS} swabs at six university buildings. Overall, {POS}% of swabs were PCR-positive for SARS-CoV-2, with individual buildings ranging between {POS_MIN}% and {POS_MAX}%.
 
 *Comment on when spikes in cases, swabs, and waste-water occurred….*
 
@@ -1633,24 +1535,11 @@ result_p3 <- lst(
   glue::glue_data("
 #### Modeling of campus-wide cases based on environmental detection
 
-Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), both on-campus and regional waste-water metrics, and Wi-Fi user counts. Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1). The selected model did not violate the assumption of equidispersion (dispersion = {DISP_EST}, *p* {DISP_P}). Regional wastewater did show a moderate collinearity with the other predictors (vif = VIF_WW)."
+Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), regional waste-water signal, and Wi-Fi user counts. Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1). The selected model did not violate the assumption of equidispersion (dispersion = {DISP_EST}, *p* {DISP_P}). Regional wastewater did show a moderate collinearity with the other predictors (vif = VIF_WW)."
 )
-
-
-
-### TODO: probably remove this and use above instead
-
-result_p4 <- lst() |> 
-  glue::glue_data(
-"
-#### Modeling of per-building environmental detection
-
-"
-)
-
 
 # hi-low traffic effect paragraph
-result_p5 <- lst(
+result_p4 <- lst(
   df = swab_summary_location_traffic |> mutate(p = positivity),
   mod = traffic_model |> filter(term == 'traffichigh'),
   high_n = df |> filter(traffic == 'high traffic') |> pull(n),
@@ -1687,14 +1576,8 @@ print(result_p2)
 print(result_p3)
 ```
 
-
 ```{r, results='asis', echo=FALSE}
 print(result_p4)
-```
-
-
-```{r, results='asis', echo=FALSE}
-print(result_p5)
 ```
 
 
