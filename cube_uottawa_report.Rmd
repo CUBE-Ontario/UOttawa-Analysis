@@ -48,11 +48,11 @@ library(janitor)
 set.seed(123)
 
 ggplot2::theme_set(theme_bw() + theme(
-  legend.text = element_markdown(family = 'IBM Plex Sans', colour = 'gray30'),
-  axis.text = element_markdown(family = 'IBM Plex Sans', colour = 'gray30'),
-  axis.title = element_markdown(family = 'IBM Plex Sans',colour = 'gray30'),
+  legend.text = element_markdown(colour = 'gray30'),
+  axis.text = element_markdown( colour = 'gray30'),
+  axis.title = element_markdown(colour = 'gray30'),
 ))
-hrbrthemes::import_plex_sans()
+
 
 source(here('R/report_plots.R'))
 
@@ -194,7 +194,7 @@ theme_remove_grid <- function(){
       vjust = -1, 
       size = 8, 
       face = 'bold', 
-      family = 'IBM Plex Sans',
+      # family = 'IBM Plex Sans',
       colour = 'gray50',
       margin = margin(0, 0, 0, 0)),
     plot.margin = unit(c(0, 0, 0, 0), 'mm'))
@@ -630,8 +630,6 @@ anova_table <- function(model, type, caption){
 
 #### Poisson Main Effects Only
 
-Poisson model chosen by backward elimination with no interactions identifies swab positivity, Ottawa WW signal, and wifi as significant predictors. CO2 is the only main effect dropped from the full model during backward elimination.
-
 
 ```{r}
 # poission reg, full model, main effects only
@@ -790,7 +788,6 @@ broom.mixed::tidy(
   exponentiate = F,
   conf.level = 0.95,
   conf.method = "Wald")
-
 
 # Wald-type CIs
 bldg_model_summary <- 
@@ -1415,10 +1412,9 @@ figure_3
 ```{r save figs}
 ## save figures ----
 # figs 1 & 3 don't work as a pdf for some reason
-ggsave('fig/figure_1.png', figure_1, device = 'png', width = 7, height = 7) 
-ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', height = 4, width = 4)
-ggsave('fig/figure_2.png', figure_2, device = 'png', height = 4, width = 4)
-ggsave('fig/figure_3.png', figure_3, device = 'png', dpi = 300, height = 6, width = 6)
+ggsave('fig/figure_1.pdf', (figure_1), device = 'pdf', dpi = 300, width = 7, height = 7)
+ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', dpi = 300, height = 4, width = 4)
+ggsave('fig/figure_3.pdf', figure_3, device = 'pdf', dpi = 300, height = 6, width = 6)
 
 mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
                  remove_controls = T)
