@@ -58,7 +58,17 @@ source(here('R/report_plots.R'))
 
 # Functions -----------------------------------------
 
-convert_cq_to_copies <- function(cq) 10 ** ((40.1 - cq) / 3.23)
+convert_cq_to_copies <- \(cq) {
+  10 ** ((40.1 - cq) / 3.23)
+} 
+
+cq_to_copies_plus_one <- \(cq){
+  ifelse(
+    is.na(cq),  
+    1,  
+    1 + (10 ** ((40.1 - cq) / 3.23))
+  )
+} 
 
 # creates yyyy-ww label for grouping data
 get_date_week <- function(x){
@@ -74,12 +84,11 @@ week_to_date <- function(year_week){
   wk <- str_extract(year_week, '..$') |> as.integer()
   ydays <- if_else(
     year == '2021',
-    days(7*wk - 2),
-    days(7*wk - 3),
+    days(7 * wk - 2),
+    days(7 * wk - 3),
   )
   return(d + ydays)
 }
-
 
 # get biweekly bin date for vector of dates
 get_date_biweekly <- function(x){
@@ -200,6 +209,7 @@ theme_remove_grid <- function(){
     plot.margin = unit(c(0, 0, 0, 0), 'mm'))
 }
 
+
 # Data ------------------------------------------------
 
 # Lookup for anonymized building names
@@ -228,6 +238,7 @@ swabs_tidy <-
   ) |> 
   select(date_swab, site, floor, location, pcr_positive, pcr_ct, co2) |> 
   mutate(
+    copies_plus_one = cq_to_copies_plus_one(pcr_ct),
     biweek = get_date_biweekly(date_swab),
     site = map_chr(site, ~lookup_swab_sites[[.]])
   )
@@ -282,7 +293,22 @@ total_n_cases_study_period <-
 
 
 # Summaries -----------------------------------------
-# 
+
+# 95% CI on the sample mean
+confidence_interval <- function(x, level = 0.95) {
+  if (length(x) < 2) return(
+    tibble(lower = NA_real_, upper = NA_real_)
+  )
+  vec_sd <- sd(x, na.rm = T)
+  n <- length(x[!is.na(x)])
+  error <- qt((level + 1)/2, df = n - 1) *
+    vec_sd / sqrt(n)
+  tibble(
+    lower = mean(x, na.rm = T) - error,
+    upper = mean(x, na.rm = T) + error
+  )
+}
+
 positivity_summary <- function(swabs){
   swabs |> 
     summarise(
@@ -290,6 +316,21 @@ positivity_summary <- function(swabs){
       x = sum(pcr_positive == 'Positive', na.rm = F),
       positivity = round(100 * x / n, digits = 1),
       .groups = 'drop')
+}
+
+# summaries copies with geometric mean and CI
+copies_summary <- function(swabs_tidy){
+  swabs_tidy |>
+    mutate(log_copies = log(copies_plus_one)) |> 
+    summarise(
+      logmean = mean(log_copies),
+      logmean_ci = 
+        confidence_interval(log_copies) |> 
+        rename_with(~paste0('logmean_', .))
+    ) |> 
+    unnest(logmean_ci) |> 
+    mutate(across(starts_with('logmean_'), exp)) |> 
+    rename_with(~str_replace(., 'logmean', 'geomean_copiesP1'))
 }
 
 co2_summary <- function(swabs){
@@ -340,8 +381,13 @@ swabs_biweekly <-
   swabs_tidy |>
   group_by(biweek) |> 
   positivity_summary() |> 
-  left_join(swabs_tidy |> group_by(biweek) |> co2_summary(),
-            by = join_by(biweek, n))
+  left_join(
+    swabs_tidy |> group_by(biweek) |> co2_summary(),
+    by = join_by(biweek, n)) |> 
+  left_join(
+    swabs_tidy |> group_by(biweek) |> copies_summary(),
+    by = join_by(biweek)
+  )
 
 # swabs biweekly summary by site  
 swabs_biweekly_by_site <- 
@@ -439,7 +485,10 @@ figure_sites_map <-
 # joining data for pairwise correlations
 biweekly_data <-  lst(
   swab_co2 = swabs_biweekly |> 
-    transmute(biweek, `Swab PCR` = positivity, `CO2` = co2_mean),
+    transmute(biweek, 
+              `Swab PCR` = positivity, 
+              `Swab copies` = geomean_copiesP1,
+              `CO2` = co2_mean),
   wifi = wifi_biweekly |> transmute(biweek, `Wi-Fi` = mean),
   ww = regional_ww_biweekly |> transmute(biweek, `Ottawa WW` = mean),
   cases = cases_biweekly |> transmute(biweek, Cases = cases),
@@ -462,8 +511,8 @@ corrtest <-
   )
 
 # spearman r and p-values; upper triangle has adj. correlations
-corr_r <- corrtest$r |> round(3)
-corr_p <- corrtest$p |> round(3)
+corr_r <- corrtest$r |> signif(2)
+corr_p <- corrtest$p |> signif(2)
 
 # remove lower tri with raw probabilities
 corr_r[lower.tri(corr_r, diag = T)] <- NA
@@ -533,56 +582,56 @@ naniar::vis_miss(df_mod) +
 <details>
 <summary>Case count distribution</summary>
 
-**Cases counts** seem to follow a negative binomial distribution a bit more than a Poisson. There is maybe some zero-inflation in our cases variable.
+<!-- **Cases counts** seem to follow a negative binomial distribution a bit more than a Poisson. There is maybe some zero-inflation in our cases variable. -->
 
-```{r cases distribution, fig.height=5, fig.width=5}
-# simulated curves
-add_poisson_density_curve <- function(p) {
-  p + geom_density(
-    data = tibble(
-      x = rpois(n = sum(!is.na(df_mod$cases)),
-                lambda = mean(df_mod$cases, na.rm = T))
-      ), 
-    aes(x), color = 'blue', alpha = 0.25, linewidth = 0.03
-  )
-}
-add_nb_density_curve <- function(p) {
-  p +     
-    geom_density(
-      data = tibble(x = rnbinom(
-        size = 1,
-        n = sum(!is.na(df_mod$cases)),
-        mu = mean(df_mod$cases, na.rm = T),
-      )), 
-      aes(x), color = 'blue', alpha = 0.25, linewidth = 0.03
-    )
-}
-simulation_plot <- function(plt_fn, title){
-  p <- df_mod |> ggplot()
-  walk(seq(100), ~ {p <<- plt_fn(p)})
-  p + 
-    geom_density(aes(cases)) + 
-    labs(x = 'Cases', subtitle = title)
-}
+<!-- ```{r cases distribution, fig.height=5, fig.width=5} -->
+<!-- # simulated curves -->
+<!-- add_poisson_density_curve <- function(p) { -->
+<!--   p + geom_density( -->
+<!--     data = tibble( -->
+<!--       x = rpois(n = sum(!is.na(df_mod$cases)), -->
+<!--                 lambda = mean(df_mod$cases, na.rm = T)) -->
+<!--       ),  -->
+<!--     aes(x), color = 'blue', alpha = 0.25, linewidth = 0.03 -->
+<!--   ) -->
+<!-- } -->
+<!-- add_nb_density_curve <- function(p) { -->
+<!--   p +      -->
+<!--     geom_density( -->
+<!--       data = tibble(x = rnbinom( -->
+<!--         size = 1, -->
+<!--         n = sum(!is.na(df_mod$cases)), -->
+<!--         mu = mean(df_mod$cases, na.rm = T), -->
+<!--       )),  -->
+<!--       aes(x), color = 'blue', alpha = 0.25, linewidth = 0.03 -->
+<!--     ) -->
+<!-- } -->
+<!-- simulation_plot <- function(plt_fn, title){ -->
+<!--   p <- df_mod |> ggplot() -->
+<!--   walk(seq(100), ~ {p <<- plt_fn(p)}) -->
+<!--   p +  -->
+<!--     geom_density(aes(cases)) +  -->
+<!--     labs(x = 'Cases', subtitle = title) -->
+<!-- } -->
 
-# Poisson dist
-p1 <- simulation_plot(
-  add_poisson_density_curve,
-  'Cases vs. Simulated poisson distribution'
-  )
+<!-- # Poisson dist -->
+<!-- p1 <- simulation_plot( -->
+<!--   add_poisson_density_curve, -->
+<!--   'Cases vs. Simulated poisson distribution' -->
+<!--   ) -->
 
-# NB dist
-p2 <- simulation_plot(
-  add_nb_density_curve,
-  'Cases vs. Simulated negative binomial distribution'
-  )
+<!-- # NB dist -->
+<!-- p2 <- simulation_plot( -->
+<!--   add_nb_density_curve, -->
+<!--   'Cases vs. Simulated negative binomial distribution' -->
+<!--   ) -->
 
-(p1 / p2)
+<!-- (p1 / p2) -->
 
-rm(p1, p2, add_poisson_density_curve, add_nb_density_curve)
-```
+<!-- rm(p1, p2, add_poisson_density_curve, add_nb_density_curve) -->
+<!-- ``` -->
 
-<br>
+<!-- <br> -->
 
 --------------------------------------------
 
@@ -605,7 +654,8 @@ coefficients_table <- function(model, caption) {
 
 incidence_ratio_table <- function(model, caption) {
   model |> 
-    broom::tidy(exponentiate = T, conf.int = T, conf.level = 0.95) |> 
+    broom::tidy(exponentiate = T, conf.int = T, 
+                conf.level = 0.95) |> 
   mutate(across(where(is.double), ~round(., 4))) |> 
   kableExtra::kable(
     format = 'pipe',
@@ -629,7 +679,6 @@ anova_table <- function(model, type, caption){
 --------------------------------------------
 
 #### Poisson Main Effects Only
-
 
 ```{r}
 # poission reg, full model, main effects only
@@ -739,11 +788,7 @@ bldg_swabs <-
   swabs_tidy |> 
   filter(date_swab < '2022-02-02') |> 
   mutate(
-    week = get_date_week(date_swab) |> as.character(),
-    copies = convert_cq_to_copies(pcr_ct),
-    copies_plus_one = if_else(
-      is.na(copies), 1, copies + 1
-      )
+    week = get_date_week(date_swab) |> as.character()
   ) |>
   group_by(site, week) |> 
   summarise(
@@ -908,7 +953,7 @@ fig1_timeline <-
   geom_point(aes(x = end), color = theme_color, size = 1.6) +
   geom_point(color = theme_color, size = 1.6) +
   scale_x_study_dates() +
-  labs(title = 'Timeline') +
+  labs(title = 'Timeline of events') +
   theme_no_x_labels() +
   theme_remove_grid()
 
@@ -944,7 +989,7 @@ fig1_cases <-
     position = position_stack(),
     na.rm = T
   ) +
-  labs(fill = NULL, title = 'UOttawa COVID-19 Cases') +
+  labs(fill = NULL, title = 'UOttawa COVID-19 Cases (n)') +
   scale_fill_carto_d() +
   scale_x_study_dates() +
   theme_no_x_labels() +
@@ -997,7 +1042,7 @@ fig1_wifi <-
               na.rm = T) +
   geom_point(color = theme_color,  alpha = 0.85, shape = 1, size = 1,
              na.rm = T) +
-  labs(title = "Wi-Fi Connections") +
+  labs(title = "Wi-Fi Connections (n)") +
   scale_x_study_dates() +
   theme_no_x_labels() +
   theme_remove_grid()
@@ -1015,12 +1060,14 @@ fig1_ott_ww <-
              alpha = 0.85, shape = 1, size = 1,
              color = theme_color) +
   labs(x = 'Date',
-       title = 'Regional Waste-Water',
+       title = 'Regional Waste-Water (SARS-CoV-2:PPMoV ratio)',
        ) +
   scale_x_study_dates() +
   theme_remove_grid() +
   theme(axis.title.x = ggtext::element_markdown(lineheight = 1),
-        axis.text.x = ggtext::element_markdown(size = 6.7)) 
+        axis.text.x = ggtext::element_markdown(size = 7,
+                                               hjust = -.05)
+        ) 
 
 figure_1 <- wrap_plots(
     fig1_timeline, 
@@ -1028,9 +1075,11 @@ figure_1 <- wrap_plots(
     fig1_swabs, 
     fig1_co2, 
     fig1_wifi, 
-    fig1_ott_ww # this is regional ww
-  ) +
-  plot_layout(ncol = 1, nrow = 7, heights = c(1, rep(1.5, 6)))
+    fig1_ott_ww  # this is regional ww
+      
+) +
+  plot_layout(ncol = 1, nrow = 7, heights = c(1, rep(1.5, 6))) +
+
 
 rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_ott_ww, fig1_cases)
 ```
@@ -1207,7 +1256,7 @@ plot_site_swabs <- function(data, site){
     scale_color_traffic() +
     rcartocolor::scale_fill_carto_d(palette = 'Safe') +
     labs(x = NULL, 
-         y = 'Copies + 1',
+         y = 'Viral<br>Copies + 1',
          fill = 'Event',
          color = 'Traffic Level') +
     
@@ -1238,7 +1287,7 @@ plot_site_wifi <- function(data, site){
     scale_x_date_month() +
     scale_y_wifi() +
     rcartocolor::scale_fill_carto_d(palette = 'Safe') +
-    labs(y = 'Wifi', x = NULL, fill = 'Event') +
+    labs(y = 'Peak Wifi<br>Connections<br>(n)', x = NULL, fill = 'Event') +
     theme_axes_lb() +
     theme(
       axis.title.y = element_markdown(),
@@ -1618,6 +1667,31 @@ sessionInfo()
 </details>
 
 ```{r}
+
+```
+
+
+
+------
+
+## Response to Reviewer 1
+
+R1 asks for further analysis of PCR tests in terms of copy numbers... specifically, to assess the correlation between floor-swab viral  load and other variables.
+
+The results of qPCR assays for floor swabs can be analysed as a binary variable (indicating presence/absence) or numeric variable (representing viral copies) after transformation of Cq values using a standard curve. 
+
+When viral RNA is abundant in the environment, swab positivity becomes a less useful metric as it can often reach 100%. However, floor swab positivity was generally very low during our study of the university, and never reached 100% during a single time-point. The correlation between campus-wide swab positivity and geometric mean copy number was very high (r = 0.98, CI: 0.97-0.99) and the pairwise correlations between these floor-swab statistics and other variables are nearly identical those between positivity and the same variables.
+
+Since PCR positivity is a simple percentage, it is easier to for our reader to understand than the geometric mean number of copies *plus one*.
+
+```{r}
+corr_ci |> 
+  mutate(
+    terms = terms |> 
+      str_replace('SwPCR', 'Positivity') |> 
+      str_replace('Swbcp', 'Copies')
+  ) |> 
+  filter(str_detect(terms, 'Copies|Pos'))
 
 ```
 
