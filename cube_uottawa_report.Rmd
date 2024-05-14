@@ -1060,7 +1060,7 @@ fig1_ott_ww <-
              alpha = 0.85, shape = 1, size = 1,
              color = theme_color) +
   labs(x = 'Date',
-       title = 'Regional Waste-Water (SARS-CoV-2:PPMoV ratio)',
+       title = 'Ottawa Waste-Water (SARS-CoV-2:PPMoV ratio)',
        ) +
   scale_x_study_dates() +
   theme_remove_grid() +
@@ -1430,7 +1430,7 @@ table1
 (figure_1) 
 ```
 
-**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean regional waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
+**Figure 1**: Time-series of (top to bottom) important events at the university, proportion of PCR-positive swabs, biweekly mean ambient CO~2~ (across collection sites), biweekly mean peak number of Wi-Fi connections (across 5 buildings), biweekly mean waste-water signal (across up to 6 collection sites; relative to PPMoV), biweekly mean Ottawa waste-water detection (relative to PPMoV). Points show biweekly means. Trend lines show the LOESS fit.
 
 ----
 
@@ -1580,7 +1580,7 @@ result_p3 <- lst(
   glue::glue_data("
 #### Modeling of campus-wide cases based on environmental detection
 
-Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), regional waste-water signal, and Wi-Fi user counts. Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1). The selected model did not violate the assumption of equidispersion (dispersion = {DISP_EST}, *p* {DISP_P}). Regional wastewater did show a moderate collinearity with the other predictors (vif = VIF_WW)."
+Non-invasive approaches to monitoring SARS-CoV-2 levels such as environmental sampling are valuable when systematic testing of individuals is unfeasible. We evaluated predictors of the campus-wide case burden using Poisson regression models selected by backward elimination. Predictors specified in the full model included surface swab positivity (across 6 buildings), CO~2~ concentrations (at the time of swab collection), regional waste-water signal, and Wi-Fi user counts. Backward elimination dropped the CO~2~ term and indicated the remaining variables as significant, positive predictors of case counts. The regional waste-water signal had the largest estimated effect, followed by peak Wi-Fi users, swab positivity, and university waste-water (Table 1). The selected model did not violate the assumption of equidispersion (dispersion = {DISP_EST}, *p* {DISP_P}). Ottawa wastewater did show a moderate collinearity with the other predictors (vif = VIF_WW)."
 )
 
 # hi-low traffic effect paragraph
