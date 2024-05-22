@@ -1087,9 +1087,15 @@ rm(fig1_timeline, fig1_swabs, fig1_co2, fig1_wifi, fig1_ott_ww, fig1_cases)
 
 ```{r figure 2, echo=TRUE}
 ## Figure 2: Corr heatmap -----------------------------------
-figure_2 <- corrr::autoplot(corr_spearman, triangular = "lower",
-                             barheight = 10) +
-  geom_text(aes(label = r |> round(2)), size = 3.5)
+figure_2 <- corrr::autoplot(corr_spearman,
+                            triangular = "lower",
+                            barheight = 10) +
+  geom_text(aes(label = r |> round(2)), size = 3.5) +
+  labs(
+    color = "Spearman's r",
+    fill = "Spearman's r"
+    ) +
+  theme(legend.text = element_text(hjust = 1))
 ```
 
 
@@ -1222,11 +1228,12 @@ plot_site_cases <- function(data, site){
       labels = c('Employee', 'Student'),
       drop = FALSE,
       name = 'Cases: Role') +
-    labs(y = 'Cases', x = NULL, title = site) +
+    labs(y = 'Cases (n)', x = NULL, title = site) +
     theme_no_x_labels() +
     theme_axes_lb_no_margin()
      
-  remove_y_axis_if_not_leftmost(p, site)
+remove_y_axis_if_not_leftmost(p, site)
+
 }
 
 # plot swabs copies timeseries for site
@@ -1266,10 +1273,12 @@ plot_site_swabs <- function(data, site){
           legend.text = element_markdown())
   
   if (site == 'RES') {
-    p <- p + theme_axis_RES()
+    p <- p +
+      theme_axis_RES()
   } else {
-    p <- p + theme_no_x_labels()
+  p <- p + theme_no_x_labels()
   }
+  # 
   remove_y_axis_if_not_leftmost(p, site)
 }
 
@@ -1287,7 +1296,9 @@ plot_site_wifi <- function(data, site){
     scale_x_date_month() +
     scale_y_wifi() +
     rcartocolor::scale_fill_carto_d(palette = 'Safe') +
-    labs(y = 'Peak Wifi<br>Connections<br>(n)', x = NULL, fill = 'Event') +
+    labs(y = 'Peak Wifi<br>Users (n)',
+         x = NULL,
+         fill = 'Event') +
     theme_axes_lb() +
     theme(
       axis.title.y = element_markdown(),
@@ -1352,7 +1363,7 @@ fig3_plts <-
       ) 
       if (site == 'RES') {
         p <- p + patchwork::plot_layout(
-          heights = c(1.16, 1.14, 0.63)
+          heights = c(1.1, 1.1, 0.62)
         )
       }
       needs_axis <- site %in% c('FAC', 'ADM1', 'ADM2')
@@ -1364,16 +1375,26 @@ fig3_plts <-
     }))
 
 #### Combine all 6 sites' plots into 3*2 panel -----
-(
-figure_3 <- 
+
+h_patch <- 
   patchwork::wrap_plots(
     fig3_plts$panel, 
     ncol = 2,
     tag_level = 'keep',
     guides = 'collect'
+  ) +
+  theme(
+    plot.margin = margin(5.5, 5.5, 0, 5.5)
+  )
+  
+figure_3 <- wrap_elements(panel = h_patch) +
+  labs(tag = "Date 2021-2022") +
+  theme(
+    plot.tag = element_text(size = rel(1.1)),
+    plot.tag.position = "bottom"
   )
 
-)
+
 ```
 
 </details>
@@ -1463,7 +1484,7 @@ figure_3
 # figs 1 & 3 don't work as a pdf for some reason
 ggsave('fig/figure_1.pdf', (figure_1), device = 'pdf', dpi = 300, width = 7, height = 7)
 ggsave('fig/figure_2.pdf', figure_2, device = 'pdf', dpi = 300, height = 4, width = 4)
-ggsave('fig/figure_3.pdf', figure_3, device = 'pdf', dpi = 300, height = 6, width = 6)
+ggsave('fig/figure_3.pdf', figure_3, device = 'pdf', dpi = 300, height = 6.5, width = 6)
 
 mapview::mapshot(figure_sites_map, file = 'fig/figure_s2_map.pdf',
                  remove_controls = T)
@@ -1676,13 +1697,9 @@ sessionInfo()
 
 ## Response to Reviewer 1
 
-R1 asks for further analysis of PCR tests in terms of copy numbers... specifically, to assess the correlation between floor-swab viral  load and other variables.
+R1 asks for further analysis of PCR tests in terms of copy numbers... specifically, to assess the correlations between floor-swab viral  load and other variables. The results of qPCR assays for floor swabs can be analysed as a binary variable (indicating presence/absence) or numeric variable (representing viral copies) after transformation of Cq values using a standard curve. Groups of test results can be summarised as either a positivity rate or an average copy number (we usually use a geometric mean).
 
-The results of qPCR assays for floor swabs can be analysed as a binary variable (indicating presence/absence) or numeric variable (representing viral copies) after transformation of Cq values using a standard curve. 
-
-When viral RNA is abundant in the environment, swab positivity becomes a less useful metric as it can often reach 100%. However, floor swab positivity was generally very low during our study of the university, and never reached 100% during a single time-point. The correlation between campus-wide swab positivity and geometric mean copy number was very high (r = 0.98, CI: 0.97-0.99) and the pairwise correlations between these floor-swab statistics and other variables are nearly identical those between positivity and the same variables.
-
-Since PCR positivity is a simple percentage, it is easier to for our reader to understand than the geometric mean number of copies *plus one*.
+When viral RNA is abundant in the environment, swab positivity becomes a less useful metric as it can often reach 100%. However, floor swab positivity was generally low during our study of the university, and never reached 100% at any time-point. The correlation between campus-wide swab positivity and geometric mean copy number was very high (r = 0.98, CI: 0.97-0.99) and the pairwise correlations between these floor-swab statistics and other variables are nearly identical to those between positivity and the same variables (e.g. correlation with cases is r = 0.746 for copies and r =  0.743 for positivity).
 
 ```{r}
 corr_ci |> 
@@ -1691,7 +1708,9 @@ corr_ci |>
       str_replace('SwPCR', 'Positivity') |> 
       str_replace('Swbcp', 'Copies')
   ) |> 
-  filter(str_detect(terms, 'Copies|Pos'))
+  filter(str_detect(terms, 'Copies|Pos')) |> 
+  mutate(across(where(is.numeric), ~signif(., digits = 2))) |> 
+  gt::gt(caption = 'Spearman correlation coefficients are almost identical for viral positivity and copies')
 
 ```
 

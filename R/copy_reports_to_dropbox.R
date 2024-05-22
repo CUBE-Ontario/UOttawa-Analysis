@@ -10,7 +10,7 @@ library(tidyverse)
 # copy reports to dropbox
 rmarkdown::render(
   input = 'cube_uottawa_report.Rmd',
-  output_dir = '~/Dropbox/CUBE Study/Data Analysis/'
+  output_dir = '~/Dropbox/CUBE Study/uOttawa paper/'
 )
 
 # rmarkdown::render(
